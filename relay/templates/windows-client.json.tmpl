@@ -1,0 +1,127 @@
+{
+  "log": {
+    "access": "none",
+    "error": "",
+    "loglevel": "none"
+  },
+  "inbounds": [
+    {
+      "tag": "client-tun",
+      "protocol": "tun",
+      "settings": {
+        "name": "handshake0",
+        "desc": "HandShake VPN",
+        "mtu": 1500,
+        "gateway": [
+          "10.253.0.1/30",
+          "fd7a:115c:a1e0::1/126"
+        ],
+        "dns": [
+          "1.1.1.1",
+          "1.0.0.1"
+        ],
+        "userLevel": 0,
+        "autoSystemRoutingTable": [
+          "0.0.0.0/0",
+          "::/0"
+        ],
+        "autoOutboundsInterface": "auto"
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic"
+        ],
+        "routeOnly": true
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "tag": "blocked",
+      "protocol": "blackhole",
+      "settings": {}
+    },
+    {
+      "tag": "to-relay",
+      "protocol": "vless",
+      "settings": {
+        "address": __RELAY_ADDRESS_JSON__,
+        "port": __RELAY_PORT__,
+        "id": __CLIENT_UUID_JSON__,
+        "encryption": "none",
+        "flow": "xtls-rprx-vision"
+      },
+      "streamSettings": {
+        "network": "raw",
+        "security": "reality",
+        "realitySettings": {
+          "show": false,
+          "serverName": __REALITY_SERVER_NAME_JSON__,
+          "fingerprint": "chrome",
+          "password": __REALITY_PUBLIC_KEY_JSON__,
+          "shortId": __CLIENT_SHORT_ID_JSON__,
+          "spiderX": "/"
+        }
+      }
+    }
+  ],
+  "routing": {
+    "domainStrategy": "IPIfNonMatch",
+    "rules": [
+      {
+        "type": "field",
+        "inboundTag": [
+          "client-tun"
+        ],
+        "domain": [
+          "geosite:private"
+        ],
+        "outboundTag": "blocked"
+      },
+      {
+        "type": "field",
+        "inboundTag": [
+          "client-tun"
+        ],
+        "ip": [
+          "geoip:private",
+          "0.0.0.0/8",
+          "10.0.0.0/8",
+          "100.64.0.0/10",
+          "127.0.0.0/8",
+          "169.254.0.0/16",
+          "172.16.0.0/12",
+          "192.0.0.0/24",
+          "192.0.2.0/24",
+          "192.168.0.0/16",
+          "198.18.0.0/15",
+          "198.51.100.0/24",
+          "203.0.113.0/24",
+          "224.0.0.0/4",
+          "240.0.0.0/4",
+          "::/128",
+          "::1/128",
+          "64:ff9b::/96",
+          "64:ff9b:1::/48",
+          "100::/64",
+          "2001:db8::/32",
+          "2002::/16",
+          "fc00::/7",
+          "fe80::/10",
+          "ff00::/8"
+        ],
+        "outboundTag": "blocked"
+      },
+      {
+        "type": "field",
+        "inboundTag": [
+          "client-tun"
+        ],
+        "outboundTag": "to-relay"
+      }
+    ]
+  }
+}

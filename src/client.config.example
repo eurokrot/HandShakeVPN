@@ -1,0 +1,7 @@
+# Copy this file to client.config next to HandShake VPN.exe, or install it as
+# C:\ProgramData\HandShake VPN\client.config.
+# Production requires HTTPS. Plain HTTP is accepted only when both values below
+# explicitly select the isolated test environment.
+Environment=Test
+ApiBaseUrl=https://vpn-control.example.com/
+AllowInsecureHttp=false

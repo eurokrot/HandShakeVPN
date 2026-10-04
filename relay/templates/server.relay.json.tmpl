@@ -1,0 +1,131 @@
+{
+  "log": {
+    "access": "none",
+    "error": "",
+    "loglevel": "none"
+  },
+  "inbounds": [
+    {
+      "tag": "relay-vless-reality",
+      "listen": "0.0.0.0",
+      "port": __RELAY_PORT__,
+      "protocol": "vless",
+      "settings": {
+        "clients": [
+          {
+            "id": __EXIT_NODE_UUID_JSON__,
+            "email": "mvp-exit-b@handshake.invalid",
+            "flow": "xtls-rprx-vision",
+            "reverse": {
+              "tag": "mvp-exit-b-reverse"
+            }
+          },
+          {
+            "id": __CLIENT_UUID_JSON__,
+            "email": "mvp-client-a@handshake.invalid",
+            "flow": "xtls-rprx-vision"
+          }
+        ],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "raw",
+        "security": "reality",
+        "sockopt": {
+          "tcpCongestion": "bbr",
+          "tcpKeepAliveIdle": 60,
+          "tcpKeepAliveInterval": 30
+        },
+        "realitySettings": {
+          "show": false,
+          "target": __REALITY_TARGET_JSON__,
+          "xver": 0,
+          "serverNames": [
+            __REALITY_SERVER_NAME_JSON__
+          ],
+          "privateKey": __REALITY_PRIVATE_KEY_JSON__,
+          "minClientVer": "26.3.27",
+          "shortIds": [
+            __EXIT_SHORT_ID_JSON__,
+            __CLIENT_SHORT_ID_JSON__
+          ]
+        }
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "tag": "blocked",
+      "protocol": "blackhole",
+      "settings": {}
+    }
+  ],
+  "routing": {
+    "domainStrategy": "IPIfNonMatch",
+    "rules": [
+      {
+        "type": "field",
+        "inboundTag": [
+          "relay-vless-reality"
+        ],
+        "domain": [
+          "geosite:private"
+        ],
+        "outboundTag": "blocked"
+      },
+      {
+        "type": "field",
+        "inboundTag": [
+          "relay-vless-reality"
+        ],
+        "ip": [
+          "geoip:private",
+          "0.0.0.0/8",
+          "10.0.0.0/8",
+          "100.64.0.0/10",
+          "127.0.0.0/8",
+          "169.254.0.0/16",
+          "172.16.0.0/12",
+          "192.0.0.0/24",
+          "192.0.2.0/24",
+          "192.168.0.0/16",
+          "198.18.0.0/15",
+          "198.51.100.0/24",
+          "203.0.113.0/24",
+          "224.0.0.0/4",
+          "240.0.0.0/4",
+          "::/128",
+          "::1/128",
+          "64:ff9b::/96",
+          "64:ff9b:1::/48",
+          "100::/64",
+          "2001:db8::/32",
+          "2002::/16",
+          "fc00::/7",
+          "fe80::/10",
+          "ff00::/8"
+        ],
+        "outboundTag": "blocked"
+      },
+      {
+        "type": "field",
+        "inboundTag": [
+          "relay-vless-reality"
+        ],
+        "network": "tcp",
+        "port": "22,25,465,587",
+        "outboundTag": "blocked"
+      },
+      {
+        "type": "field",
+        "inboundTag": [
+          "relay-vless-reality"
+        ],
+        "user": [
+          "mvp-client-a@handshake.invalid"
+        ],
+        "outboundTag": "mvp-exit-b-reverse"
+      }
+    ]
+  }
+}
