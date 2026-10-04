@@ -109,6 +109,7 @@
      <Border x:Name="MenuBackdrop" Background="#40091A38" CornerRadius="26" Opacity="0"/>
      <Border x:Name="MenuPanel" Background="#F6F9FF" CornerRadius="20" HorizontalAlignment="Left" VerticalAlignment="Top" Width="270" Margin="16,83,0,0" Padding="14" TextElement.Foreground="#19345C" Opacity="0">
       <Border.RenderTransform><TranslateTransform X="-300"/></Border.RenderTransform>
+     <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="490">
      <StackPanel>
       <Grid Margin="6,0,0,12"><TextBlock x:Name="MenuTitle" Text="Меню" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center"/><Button x:Name="CloseMenu" Content="×" HorizontalAlignment="Right" Padding="9,3" Background="Transparent" AutomationProperties.Name="Закрыть меню"/></Grid>
       <Button x:Name="NavMap" Content="◎   Карта сети" Background="#E8F1FF" Margin="0,0,0,8"/>
@@ -116,9 +117,18 @@
       <Button x:Name="NavActivation" Content="⌁   Активация" Background="#E8F1FF" Margin="0,8,0,0"/>
       <Button x:Name="RestoreNetwork" Content="Восстановить обычную сеть" Background="#E8F1FF" Margin="0,8,0,0"/>
       <Button x:Name="LanguageButton" Content="EN   English" Background="#E8F1FF" Margin="0,8,0,0"/>
+      <Expander x:Name="ServiceDocuments" Header="Документы сервиса" FontSize="11" Margin="7,12,0,0">
+       <StackPanel Margin="0,5,0,0">
+        <Button x:Name="OpenTerms" Content="Условия пользования" FontSize="11" Padding="8,5" Background="Transparent" HorizontalContentAlignment="Left"/>
+        <Button x:Name="OpenPrivacy" Content="Конфиденциальность" FontSize="11" Padding="8,5" Background="Transparent" HorizontalContentAlignment="Left"/>
+        <Button x:Name="OpenLicenses" Content="Лицензии" FontSize="11" Padding="8,5" Background="Transparent" HorizontalContentAlignment="Left"/>
+        <Button x:Name="OpenDataDeletion" Content="Удаление данных" FontSize="11" Padding="8,5" Background="Transparent" HorizontalContentAlignment="Left"/>
+       </StackPanel>
+      </Expander>
       <TextBlock x:Name="MenuNodeStatus" Text="Node Service · не установлена" Foreground="#7184A2" FontSize="11" Margin="8,18,0,8"/>
       <Button x:Name="MenuHide" Content="Свернуть в трей" Background="Transparent" FontSize="12"/>
      </StackPanel>
+     </ScrollViewer>
     </Border>
    </Grid>
    <Grid x:Name="SettingsOverlay" Visibility="Collapsed">

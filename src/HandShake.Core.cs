@@ -4,6 +4,55 @@ using System.Linq;
 
 namespace HandShake
 {
+    public static class InstalledUpdateNotice
+    {
+        // An interrupted notice write must not prevent the UI from starting.
+        // The installed version is authoritative; an older notice is ignored.
+        public static string ReadCurrentVersion(string path, string installedVersion)
+        {
+            try
+            {
+                using (var file = new System.IO.FileStream(path, System.IO.FileMode.Open,
+                    System.IO.FileAccess.Read, System.IO.FileShare.Read | System.IO.FileShare.Delete))
+                {
+                    if (file.Length == 0 || file.Length > 4096) return null;
+                    using (var reader = new System.IO.StreamReader(file))
+                    {
+                        var serializer = new System.Web.Script.Serialization.JavaScriptSerializer {
+                            MaxJsonLength = 4096, RecursionLimit = 4
+                        };
+                        var record = serializer.Deserialize<Dictionary<string, object>>(reader.ReadToEnd());
+                        object value;
+                        return record != null && record.TryGetValue("version", out value) && value is string &&
+                            String.Equals((string)value, installedVersion, StringComparison.Ordinal)
+                            ? (string)value : null;
+                    }
+                }
+            }
+            catch (System.IO.IOException) { return null; }
+            catch (UnauthorizedAccessException) { return null; }
+            catch (ArgumentException) { return null; }
+            catch (InvalidOperationException) { return null; }
+        }
+    }
+
+    public static class ServiceDocumentLinks
+    {
+        public static Uri Get(string document, bool english)
+        {
+            string path;
+            switch (document)
+            {
+                case "terms": path = "terms/current"; break;
+                case "privacy": path = "privacy"; break;
+                case "licenses": path = "licenses"; break;
+                case "data-deletion": path = "data-deletion"; break;
+                default: throw new ArgumentException("Unknown service document.", "document");
+            }
+            return new Uri("https://handshakevpn.tech/" + path + (english ? "?lang=en" : ""));
+        }
+    }
+
     // The file handle is the lifetime lock; an old file after a crash never
     // blocks a new instance. The second launch requests the existing UI to open.
     public sealed class ApplicationInstanceGuard : IDisposable

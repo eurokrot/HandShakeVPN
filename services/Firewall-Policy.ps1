@@ -2,7 +2,7 @@
 param(
     [Parameter(Mandatory = $true)]
     [ValidateSet('ApplyVpnBootstrap', 'ApplyVpnTunnel', 'VerifyVpnBootstrap', 'VerifyVpnTunnel',
-        'RemoveVpn', 'VerifyVpnStopped', 'VerifyVpnRecovery', 'ApplyNode', 'VerifyNode', 'RemoveNode', 'SelfTest')]
+        'RemoveVpn', 'RecoverVpn', 'VerifyVpnStopped', 'VerifyVpnRecovery', 'ApplyNode', 'VerifyNode', 'RemoveNode', 'SelfTest')]
     [string]$Operation,
 
     [string]$PlanPath
@@ -17,6 +17,10 @@ $script:VpnPrefix = 'HandShake.Vpn.'
 $script:NodePrefix = 'HandShake.Node.'
 $script:FirewallStateDirectory = Join-Path $env:ProgramData 'HandShake VPN\firewall'
 $script:VpnStatePath = Join-Path $script:FirewallStateDirectory 'vpn-profile-state.json'
+# Xray derives this GUID from the UTF-8 MD5 of the fixed TUN name. Identity
+# remains stable across interface-index changes; a display name alone is not
+# sufficient permission to change another adapter's routes or DNS.
+$script:VpnTunGuid = [Guid]'44eb0814-5448-ac17-9b83-f3224562e575'
 
 $script:PrivateV4 = @(
     '0.0.0.0/8', '10.0.0.0/8', '100.64.0.0/10', '127.0.0.0/8',
@@ -260,13 +264,70 @@ function Assert-VpnDefaultBlock {
     if ($notBlocked.Count -gt 0) { throw 'Effective outbound firewall policy is not fail-closed for every profile.' }
 }
 
+function Get-OwnedVpnAdapter {
+    $candidates = @(Get-NetAdapter -IncludeHidden -ErrorAction Stop | Where-Object {
+        $_.Name -eq 'handshake0' -or [string]$_.InterfaceGuid -eq [string]$script:VpnTunGuid -or
+        [string]$_.InterfaceGuid -eq ('{' + [string]$script:VpnTunGuid + '}')
+    })
+    if ($candidates.Count -gt 1) { throw 'Managed VPN adapter identity is ambiguous; no network settings were changed.' }
+    foreach ($adapter in $candidates) {
+        $guid = [Guid]::Empty
+        if (-not [Guid]::TryParse([string]$adapter.InterfaceGuid, [ref]$guid) -or $guid -ne $script:VpnTunGuid -or
+            $adapter.HardwareInterface -ne $false -or
+            [IO.Path]::GetFileName([string]$adapter.DriverFileName) -ne 'wintun.sys' -or [int]$adapter.ifIndex -le 0) {
+            throw 'Managed VPN adapter identity could not be verified; no network settings were changed.'
+        }
+        $adapter
+    }
+}
+
+function Assert-PersonalXrayStopped {
+    $personalPath = [IO.Path]::GetFullPath((Join-Path $env:ProgramFiles 'HandShake VPN\runtime\vpn\xray.exe'))
+    foreach ($process in @(Get-Process -Name 'xray' -ErrorAction SilentlyContinue)) {
+        try {
+            if ($process.HasExited) { continue }
+            $path = [string]$process.MainModule.FileName
+            if ([string]::IsNullOrWhiteSpace($path)) { throw 'Unknown Xray executable path.' }
+        } catch {
+            throw 'Could not verify an Xray process; personal VPN cleanup was stopped.'
+        }
+        if ([string]::Equals([IO.Path]::GetFullPath($path), $personalPath, [StringComparison]::OrdinalIgnoreCase)) {
+            throw 'Personal VPN Xray is still running; network blocking was retained.'
+        }
+    }
+}
+
+function Clear-VpnTunState {
+    # A Job Object terminates Xray on service failure, but a forced stop cannot
+    # execute Xray's normal FlushRoutes/FlushIPAddresses/FlushDNS cleanup.
+    # Only its deterministic, dedicated Wintun adapter is eligible here.
+    Assert-PersonalXrayStopped
+    $adapters = @(Get-OwnedVpnAdapter)
+    foreach ($adapter in $adapters) {
+        $index = [int]$adapter.ifIndex
+        $routes = @(Get-NetRoute -InterfaceIndex $index -PolicyStore ActiveStore -ErrorAction Stop)
+        $addresses = @(Get-NetIPAddress -InterfaceIndex $index -PolicyStore ActiveStore -ErrorAction Stop)
+        $dns = @(Get-DnsClientServerAddress -InterfaceIndex $index -ErrorAction Stop |
+            Where-Object { @($_.ServerAddresses).Count -gt 0 })
+        if ($routes.Count -eq 0 -and $addresses.Count -eq 0 -and $dns.Count -eq 0) { continue }
+        # Recheck the GUID and process immediately before mutation. Do not use
+        # a stale ifIndex if Windows replaced the adapter after enumeration.
+        $current = @(Get-OwnedVpnAdapter)
+        if ($current.Count -ne 1 -or [int]$current[0].ifIndex -ne $index) {
+            throw 'Managed VPN adapter changed during cleanup; network blocking was retained.'
+        }
+        Assert-PersonalXrayStopped
+        if ($dns.Count -gt 0) { Set-DnsClientServerAddress -InterfaceIndex $index -ResetServerAddresses -ErrorAction Stop }
+        foreach ($route in $routes) { Remove-NetRoute -InputObject $route -Confirm:$false -ErrorAction Stop }
+        foreach ($address in $addresses) { Remove-NetIPAddress -InputObject $address -Confirm:$false -ErrorAction Stop }
+    }
+}
+
 function Assert-VpnStopped {
     if (@(Get-GroupRules $script:VpnGroup).Count -ne 0 -or (Test-Path -LiteralPath $script:VpnStatePath)) {
         throw 'Managed VPN firewall cleanup is incomplete.'
     }
-    $adapters = @(Get-NetAdapter -IncludeHidden | Where-Object {
-        $_.Name -eq 'handshake0' -or $_.InterfaceDescription -eq 'HandShake VPN'
-    })
+    $adapters = @(Get-OwnedVpnAdapter)
     foreach ($adapter in $adapters) {
         if (@(Get-NetRoute -InterfaceIndex $adapter.ifIndex -PolicyStore ActiveStore -ErrorAction Stop).Count -gt 0) {
             throw 'The managed VPN adapter still has routes. Restoration is not confirmed.'
@@ -290,6 +351,12 @@ function Remove-VpnManagedState {
     Restore-VpnProfileState
     Remove-ManagedGroup $script:VpnGroup
     if (Test-Path -LiteralPath $script:VpnStatePath) { Remove-Item -LiteralPath $script:VpnStatePath -Force }
+}
+
+function Recover-VpnManagedState {
+    Clear-VpnTunState
+    Remove-VpnManagedState
+    Assert-VpnStopped
 }
 
 function Assert-VpnRecoveryComplete {
@@ -466,6 +533,9 @@ switch ($Operation) {
     'VerifyVpnTunnel' { Assert-VpnDefaultBlock; Assert-ManagedRules $script:VpnGroup 5 $script:VpnPrefix }
     'RemoveVpn' {
         Remove-VpnManagedState
+    }
+    'RecoverVpn' {
+        Recover-VpnManagedState
     }
     'VerifyVpnStopped' { Assert-VpnStopped }
     'VerifyVpnRecovery' { Assert-VpnRecoveryComplete }

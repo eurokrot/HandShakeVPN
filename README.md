@@ -1,18 +1,18 @@
 # HandShake VPN — selected Windows sources
 
 This repository contains the selected Windows source components of HandShake VPN
-0.7-preview.11. It is a **partial source publication**, not the full product source.
+0.7-preview.12. It is a **partial source publication**, not the full product source.
 
 ## Published components
 
 | Folder | Contents |
 | --- | --- |
 | src | Compact Windows GUI, map, localization, activation/API integration, update check |
-| services | VPN Service, shared IPC/runtime helpers, TUN configuration, DNS policy, WFP kill switch |
+| services | VPN Service, shared IPC/runtime helpers, TUN/DNS policy, WFP kill switch, standalone network recovery |
 | shared | Protocol contracts, release/version checks, public update verification key, WFP cleanup |
-| installer | Installer source, allowlisted payload extraction, ACL/service setup and rollback |
+| installer | Installer source, allowlisted payload extraction, ACL/service setup, rollback, interruption detection |
 | relay/templates | Unfilled VLESS + REALITY examples; no working credentials |
-| tests | Core, signing-preflight and scoped WFP checks |
+| tests | Core, IPC, signing, scoped WFP, bounded disconnect/TUN recovery and isolated installer fault checks |
 
 Node Service worker, its background updater/uplink binding, backend, Linux Agent,
 Android client and administrative panel are **not included**. The GUI/shared code
@@ -50,13 +50,20 @@ or private key is required to build the GUI and VPN Service:
 & '.\dist\HandShake VPN.exe' --self-test
 .\tests\Test-ReleaseSigning.ps1
 .\tests\Test-ServiceIpcSecurity.ps1
+.\tests\Test-VpnRecovery.ps1
+.\tests\Test-VpnTunCleanup.ps1
+.\tests\Test-Installer-InterruptionJournal.ps1
+.\tests\Test-Installer-RecoveryStaging.ps1
 ```
 
 These builds/tests do not install services or change firewall/routing settings. IPC
-regression tests use unique pipes and redirected owner storage. They preserve the
-production authorization logic but do not apply its SYSTEM integrity label from
-the ordinary test user. GUI smoke
-test opens test windows briefly. The build creates a placeholder client.config from
+regression tests use unique pipes and redirected owner storage. They retain the
+production native pipe factory, medium integrity label and caller authorization.
+Recovery tests inject network/process operations or redirect
+installer paths to disposable directories; they do not install or stop live services,
+change live routes, or require the closed Node worker. The recovery-staging test
+uses non-executable fixture files derived from the public installer allowlist/pins.
+GUI smoke test opens test windows briefly. The build creates a placeholder client.config from
 src/client.config.example; configure your own HTTPS control plane for live use.
 WFP runtime requires a protected numeric public HTTPS control endpoint. Actual
 activation, catalog and VPN use require a compatible backend and enrolled nodes.
@@ -88,7 +95,28 @@ key in shared is intentionally public and cannot sign a release.
 These sources do not grant access to administrative APIs, servers or SSH accounts.
 Security review is ongoing; see SECURITY.md before interpreting this snapshot as
 a production security guarantee. See PUBLICATION_MANIFEST.json for file provenance
-and the three build-script adaptations applied to the export only.
+and the three build-script adaptations plus one isolated-test-fixture adaptation
+applied to the export only.
+
+## Recovery and verification limits
+
+Preview.12 validates completion of its own disconnect cleanup rather than an old
+status file. Managed TUN cleanup verifies the adapter GUID/driver, restores only
+its DNS/routes/addresses, and confirms cleanup before removing native protection.
+Installer checkpoints use flushed atomic journals in protected GUID staging
+directories. An interrupted or invalid journal preserves backups and blocks a new
+installation/removal until reviewed. Successful commit/rollback checkpoints do not
+block later operations. This is safe interruption detection; automatic file/SCM
+rollback after power loss is not implemented.
+
+On October 4, one real SYSTEM background update from preview.11 to preview.12
+completed on the maintainer's Windows PC with both services running. Installed
+preview.12 fault/network tests are still being completed; no new test initiated
+from a Russian provider is claimed in this snapshot. See SECURITY.md for gaps.
+The selected source checkout was built separately: GUI smoke, VPN/firewall
+self-tests, 13 Windows pipe checks, 18 disconnect checks, 46 owned-TUN checks,
+30 interruption checks, 10 staging/notice checks, locked-cache rollback and
+release-signing preflight passed without changing the installed product.
 
 ## License
 

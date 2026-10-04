@@ -11,6 +11,28 @@ using HandShake.ServiceIntegration;
 class CoreTests
 {
     static void Assert(bool condition, string message) { if (!condition) throw new Exception(message); }
+    static void CheckUpdateNotice()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "handshake-notice-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        string path = Path.Combine(directory, "update-installed.json");
+        const string version = "0.7-preview.12";
+        try
+        {
+            Assert(InstalledUpdateNotice.ReadCurrentVersion(path, version) == null, "Missing update notice must not block startup");
+            File.WriteAllText(path, "{\"version\":\"" + version + "\"}");
+            Assert(InstalledUpdateNotice.ReadCurrentVersion(path, version) == version, "Installed version notice was lost");
+            using (var locked = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+                Assert(InstalledUpdateNotice.ReadCurrentVersion(path, version) == null, "Busy notice must not block startup");
+            foreach (string damaged in new[] { "{\"version\":", "null", "[]", "{\"version\":{}}", "{\"version\":\"0.7-preview.11\"}", new string(' ', 4097) })
+            {
+                File.WriteAllText(path, damaged);
+                Assert(InstalledUpdateNotice.ReadCurrentVersion(path, version) == null, "Damaged, oversized or stale notice must not be shown");
+            }
+        }
+        finally { Directory.Delete(directory, true); }
+        Console.WriteLine("PASS: interrupted, locked, oversized and stale installed-update notices cannot block startup");
+    }
     sealed class FixedAnchor : IDeviceAnchorReader
     {
         readonly RawDeviceAnchor value;
@@ -46,6 +68,7 @@ class CoreTests
     }
     static int Main()
     {
+        CheckUpdateNotice();
         var nodes = new DemoNodeCatalog().GetNodes();
         Assert(ConnectionController.Fastest(nodes).Id == "de", "Lowest known latency must win");
         nodes[1].Available = false;

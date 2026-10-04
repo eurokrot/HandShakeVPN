@@ -26,6 +26,19 @@ again on preview.11. These checks on one Windows PC do not establish complete
 Windows 10/11 boot, uninstall, update-failure, network-change or external IPv6
 coverage, or explain the historical incidents whose original states were lost.
 
+Preview.12 adds verified own-disconnect completion, strictly scoped managed-TUN
+residual cleanup before native protection removal, and a durable protected installer
+journal. Isolated fault tests cover bounded recovery, adapter identity changes,
+partial cleanup retry, interrupted installer phases, backup retention, invalid
+journals and atomic notice replacement. These fixtures do not constitute live
+power-loss, reboot or clean-uninstall evidence. Automatic whole-installation
+rollback after power loss remains unavailable.
+
+One self-targeted SYSTEM background update preview.11 -> preview.12 completed on
+October 4 with both services running. Installed preview.12 fault/network checks
+are in progress at this snapshot. No fresh provider-side Russian network test is
+claimed. Previous preview.11 success is not treated as preview.12 coverage.
+
 The official update verifier requires the pinned public key and checks version,
 installer hash and size. Authenticode publisher verification is a separate release
 process. A fork or locally rebuilt unsigned installer is not an authorized update.

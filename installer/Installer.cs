@@ -107,6 +107,20 @@ namespace HandShake.Setup
         public uint DelayMilliseconds { get; set; }
     }
 
+    internal sealed class InstallerOperationJournal
+    {
+        public int schemaVersion { get; set; }
+        public string operation { get; set; }
+        public string phase { get; set; }
+        public string productVersion { get; set; }
+        public string checkpointAtUtc { get; set; }
+    }
+
+    internal sealed class InterruptedInstallationException : InvalidOperationException
+    {
+        public InterruptedInstallationException(string message) : base(message) { }
+    }
+
     internal static class Program
     {
         [STAThread]
@@ -419,6 +433,7 @@ namespace HandShake.Setup
                 {
                     try { acquired = gate.WaitOne(0); } catch (AbandonedMutexException) { acquired = true; }
                     if (!acquired) throw new InvalidOperationException("Another HandShake installation or removal is in progress.");
+                    RejectInterruptedInstallerOperations(ValidateInstallerJournalSecurity);
                     operation();
                 }
                 finally { if (acquired) gate.ReleaseMutex(); }
@@ -439,6 +454,7 @@ namespace HandShake.Setup
             bool applicationChangesStarted = false;
             bool dataChangesStarted = false;
             bool preserveStage = false;
+            bool journalStarted = false;
             bool hadInstall = Directory.Exists(Product.InstallRoot);
             bool hadData = Directory.Exists(Product.DataRoot);
             bool vpnExisted = ServiceExists(Product.VpnServiceName);
@@ -458,7 +474,10 @@ namespace HandShake.Setup
                 PayloadManifest manifest = ExtractAndValidatePayload(stage);
                 verifiedCleanupManifest = manifest.files.Single(file => file.path == "Firewall-Policy.ps1");
                 verifiedCleanupHelper = SafeCombine(Path.Combine(stage, "files"), "Firewall-Policy.ps1");
+                WriteOperationJournal(stage, "prepared");
+                journalStarted = true;
                 EnsureApplicationClosed();
+                WriteOperationJournal(stage, "services-stopping");
                 serviceChangesStarted = true;
                 StopService(Product.VpnServiceName, true);
                 StopService(Product.NodeServiceName, true);
@@ -483,6 +502,8 @@ namespace HandShake.Setup
                     dataBackupReady = true;
                 }
 
+                WriteOperationJournal(stage, "backups-ready");
+                WriteOperationJournal(stage, "files-writing");
                 dataChangesStarted = true;
                 EnsureProtectedDataDirectories();
                 Log("Starting install of " + manifest.productVersion + ".");
@@ -504,11 +525,11 @@ namespace HandShake.Setup
 
                 CreateShortcut();
                 WriteUninstallRegistration(manifest.productVersion);
+                WriteOperationJournal(stage, "services-starting");
                 StartService(Product.VpnServiceName);
                 StartService(Product.NodeServiceName);
-                if (backgroundUpdate)
-                    File.WriteAllText(Path.Combine(Product.InstallRoot, "update-installed.json"),
-                        new JavaScriptSerializer().Serialize(new { version = manifest.productVersion, installedAtUtc = DateTime.UtcNow.ToString("o") }));
+                if (backgroundUpdate) WriteInstalledUpdateNotice(manifest.productVersion);
+                WriteOperationJournal(stage, "completed");
                 Log("Installation completed.");
 
             }
@@ -523,9 +544,16 @@ namespace HandShake.Setup
                         vpnExisted, nodeExisted, vpnWasRunning, nodeWasRunning,
                         vpnServiceSnapshot, nodeServiceSnapshot);
                 }
+                if (journalStarted && rollbackErrors.Count == 0)
+                    TryRollbackStep(rollbackErrors, "recording completed rollback", delegate { WriteOperationJournal(stage, "rolled-back"); });
                 if (rollbackErrors.Count != 0)
                 {
                     preserveStage = true;
+                    if (journalStarted)
+                    {
+                        try { WriteOperationJournal(stage, "recovery-required"); }
+                        catch { /* The previous nonterminal checkpoint still requires recovery. */ }
+                    }
                     Log("Recovery files preserved at " + stage + ".");
                     throw new InvalidOperationException("Installation failed and rollback did not complete: " +
                         string.Join(" | ", rollbackErrors.ToArray()), installError);
@@ -681,6 +709,26 @@ namespace HandShake.Setup
             ValidateOwnedRoots();
             AssertOwnedServiceOrAbsent(Product.VpnServiceName);
             AssertOwnedServiceOrAbsent(Product.NodeServiceName);
+            // Removal must also work when an older or damaged installation lacks
+            // the current recovery helper. Stage only the embedded verified helper
+            // and manifest, without unpacking both large Xray runtime directories.
+            string stage = CreateStageDirectory();
+            try
+            {
+                PayloadManifest manifest = ExtractAndValidatePayloadCore(stage, true);
+                verifiedCleanupManifest = manifest.files.Single(file => file.path == "Firewall-Policy.ps1");
+                verifiedCleanupHelper = SafeCombine(Path.Combine(stage, "files"), "Firewall-Policy.ps1");
+                UninstallVerifiedCore();
+            }
+            finally
+            {
+                verifiedCleanupHelper = null; verifiedCleanupManifest = null;
+                TryDeleteStageDirectory(stage);
+            }
+        }
+
+        private static void UninstallVerifiedCore()
+        {
             EnsureApplicationClosed();
             Log("Uninstall started.");
             StopService(Product.VpnServiceName, true);
@@ -747,8 +795,138 @@ namespace HandShake.Setup
             return stage;
         }
 
+        private static readonly HashSet<string> OperationJournalPhases = new HashSet<string>(new[]
+        {
+            "prepared", "services-stopping", "backups-ready", "files-writing", "services-starting",
+            "completed", "rolled-back", "recovery-required"
+        }, StringComparer.Ordinal);
+
+        private static void WriteOperationJournal(string stage, string phase)
+        {
+            RequireScopedJournalStage(stage);
+            if (!OperationJournalPhases.Contains(phase)) throw new InvalidOperationException("Unknown installer journal phase.");
+            RejectReparsePoint(stage, "installer journal directory");
+            string destination = Path.Combine(stage, "operation-journal.json");
+            RejectReparsePoint(destination, "installer journal");
+            string temporary = destination + ".tmp-" + Guid.NewGuid().ToString("N");
+            try
+            {
+                var journal = new InstallerOperationJournal {
+                    schemaVersion = 1, operation = "install", phase = phase,
+                    productVersion = HandShake.Release.ProductRelease.Version,
+                    checkpointAtUtc = DateTime.UtcNow.ToString("o")
+                };
+                byte[] body = Encoding.UTF8.GetBytes(new JavaScriptSerializer().Serialize(journal));
+                using (FileStream output = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+                {
+                    output.Write(body, 0, body.Length);
+                    output.Flush(true);
+                }
+                if (File.Exists(destination)) File.Replace(temporary, destination, null);
+                else File.Move(temporary, destination);
+            }
+            finally { if (File.Exists(temporary)) File.Delete(temporary); }
+        }
+
+        private static void RequireScopedJournalStage(string stage)
+        {
+            string full = Path.GetFullPath(stage).TrimEnd(Path.DirectorySeparatorChar);
+            string root = Path.GetFullPath(Product.StagingRoot).TrimEnd(Path.DirectorySeparatorChar);
+            Guid ignored;
+            if (!string.Equals(Path.GetDirectoryName(full), root, StringComparison.OrdinalIgnoreCase) ||
+                !Guid.TryParseExact(Path.GetFileName(full), "N", out ignored))
+                throw new InvalidOperationException("The installer journal is outside its owned transaction directory.");
+        }
+
+        private static void RejectInterruptedInstallerOperations(Action<string, bool> securityValidator)
+        {
+            if (!Directory.Exists(Product.StagingRoot)) return;
+            RejectReparsePoint(Product.StagingRoot, "installer staging root");
+            securityValidator(Product.StagingRoot, true);
+            foreach (string stage in Directory.GetDirectories(Product.StagingRoot, "*", SearchOption.TopDirectoryOnly))
+            {
+                RejectReparsePoint(stage, "previous installer transaction directory");
+                string path = Path.Combine(stage, "operation-journal.json");
+                if (!File.Exists(path))
+                {
+                    if (Directory.Exists(Path.Combine(stage, "install-backup")) || Directory.Exists(Path.Combine(stage, "data-backup")))
+                        throw new InterruptedInstallationException("An earlier HandShake installer retained recovery backups without a journal at " + stage + ". No installation or removal was started. Contact support before modifying these files.");
+                    continue;
+                }
+                RequireScopedJournalStage(stage);
+                RejectReparsePoint(path, "previous installer journal");
+                securityValidator(stage, true);
+                securityValidator(path, false);
+                bool terminal;
+                try { terminal = JournalIsTerminal(path); }
+                catch
+                {
+                    throw new InterruptedInstallationException("A previous HandShake installer journal is invalid. Recovery files were retained at " + stage + ". No installation or removal was started. Contact support before modifying these files.");
+                }
+                if (!terminal)
+                    throw new InterruptedInstallationException("A previous HandShake installation was interrupted. Recovery files were retained at " + stage + ". No installation or removal was started. Use HandShake Network Recovery to restore connectivity if needed, then contact support to review the protected backups. Automatic restoration of interrupted file replacement is not available.");
+            }
+        }
+
+        private static bool JournalIsTerminal(string path)
+        {
+            FileInfo file = new FileInfo(path);
+            if (!file.Exists || file.Length < 2 || file.Length > 16384) throw new InvalidDataException("Invalid installer journal size.");
+            var data = new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(File.ReadAllText(path, Encoding.UTF8));
+            if (data == null || data.Count != 5 || !data.ContainsKey("schemaVersion") ||
+                !data.ContainsKey("operation") || !data.ContainsKey("phase") ||
+                !data.ContainsKey("productVersion") || !data.ContainsKey("checkpointAtUtc") ||
+                !(data["schemaVersion"] is int) || (int)data["schemaVersion"] != 1 ||
+                !(data["operation"] is string) || (string)data["operation"] != "install" ||
+                !(data["phase"] is string) || !OperationJournalPhases.Contains((string)data["phase"]) ||
+                !(data["productVersion"] is string) ||
+                !System.Text.RegularExpressions.Regex.IsMatch((string)data["productVersion"], @"^[0-9A-Za-z][0-9A-Za-z._-]{0,31}$") ||
+                !(data["checkpointAtUtc"] is string)) throw new InvalidDataException("Invalid installer journal fields.");
+            DateTime checkpoint;
+            string timestamp = (string)data["checkpointAtUtc"];
+            if (timestamp.Length > 40 || !DateTime.TryParse(timestamp, CultureInfo.InvariantCulture,
+                DateTimeStyles.RoundtripKind, out checkpoint) || checkpoint.Kind != DateTimeKind.Utc)
+                throw new InvalidDataException("Invalid installer journal timestamp.");
+            string phase = (string)data["phase"];
+            return phase == "completed" || phase == "rolled-back";
+        }
+
+        private static void ValidateInstallerJournalSecurity(string path, bool directory)
+        {
+            FileSystemSecurity descriptor = directory
+                ? (FileSystemSecurity)Directory.GetAccessControl(path, AccessControlSections.Access | AccessControlSections.Owner)
+                : (FileSystemSecurity)File.GetAccessControl(path, AccessControlSections.Access);
+            ValidateJournalSecurityDescriptor(descriptor, directory);
+        }
+
+        private static void ValidateJournalSecurityDescriptor(FileSystemSecurity descriptor, bool directory)
+        {
+            var system = new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null);
+            var administrators = new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null);
+            if (directory)
+            {
+                var owner = descriptor.GetOwner(typeof(SecurityIdentifier)) as SecurityIdentifier;
+                if (owner == null || (!owner.Equals(system) && !owner.Equals(administrators)))
+                    throw new InvalidOperationException("The installer journal directory has an untrusted owner. Recovery files were retained.");
+            }
+            foreach (FileSystemAccessRule rule in descriptor.GetAccessRules(true, true, typeof(SecurityIdentifier)))
+            {
+                if (rule.AccessControlType != AccessControlType.Allow) continue;
+                var identity = rule.IdentityReference as SecurityIdentifier;
+                if (identity != null && (identity.Equals(system) || identity.Equals(administrators))) continue;
+                if ((rule.FileSystemRights & ~FileSystemRights.Synchronize) != 0)
+                    throw new InvalidOperationException("The installer journal grants access outside SYSTEM and Administrators. Recovery files were retained.");
+            }
+        }
+
         private static PayloadManifest ExtractAndValidatePayload(string stage)
         {
+            return ExtractAndValidatePayloadCore(stage, false);
+        }
+
+        private static PayloadManifest ExtractAndValidatePayloadCore(string stage, bool cleanupOnly)
+        {
+            HashSet<string> archiveFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             Stream resource = Assembly.GetExecutingAssembly().GetManifestResourceStream(Product.PayloadResource);
             if (resource == null) throw new InvalidDataException("The installer component package is missing.");
             using (resource)
@@ -768,11 +946,15 @@ namespace HandShake.Setup
                     }
                     if (!IsAllowedArchiveFile(relative))
                         throw new InvalidDataException("The package contains a file outside the allowlist: " + entry.FullName);
+                    relative = NormalizeRelativePath(relative);
+                    if (!archiveFiles.Add(relative))
+                        throw new InvalidDataException("Duplicate file in the package: " + entry.FullName);
                     if (entry.Length < 0 || entry.Length > 256L * 1024L * 1024L)
                         throw new InvalidDataException("A package file exceeds the allowed size: " + entry.FullName);
                     extractedLength = checked(extractedLength + entry.Length);
                     if (extractedLength > 1024L * 1024L * 1024L)
                         throw new InvalidDataException("The total extracted size exceeds the allowed limit.");
+                    if (cleanupOnly && relative != "payload-manifest.json" && relative != @"files\Firewall-Policy.ps1") continue;
                     string destination = SafeCombine(stage, relative);
                     string parent = Path.GetDirectoryName(destination);
                     if (!string.IsNullOrEmpty(parent)) Directory.CreateDirectory(parent);
@@ -801,11 +983,15 @@ namespace HandShake.Setup
                 if (!seen.Add(relative)) throw new InvalidDataException("Duplicate path in the manifest: " + relative);
                 if (!AllowedPayloadSet.Contains(relative))
                     throw new InvalidDataException("The manifest contains a file outside the allowlist: " + relative);
-                if (file.length < 0) throw new InvalidDataException("The manifest contains a negative file size: " + relative);
+                if (file.length < 0 || file.length > 256L * 1024L * 1024L)
+                    throw new InvalidDataException("The manifest contains an invalid file size: " + relative);
+                ValidateExpectedHash(file.sha256);
                 string pinnedSha256;
                 if (PinnedRuntimeSha256.TryGetValue(relative, out pinnedSha256) &&
                     !string.Equals(file.sha256, pinnedSha256, StringComparison.OrdinalIgnoreCase))
                     throw new InvalidDataException("A pinned runtime file has an unexpected SHA-256 hash: " + relative);
+                if (!archiveFiles.Contains("files\\" + relative)) throw new FileNotFoundException("A manifest file is missing.", relative);
+                if (cleanupOnly && relative != "Firewall-Policy.ps1") continue;
                 string source = SafeCombine(Path.Combine(stage, "files"), relative);
                 if (!File.Exists(source)) throw new FileNotFoundException("A manifest file is missing.", relative);
                 VerifyFile(source, file.length, file.sha256);
@@ -1396,7 +1582,17 @@ namespace HandShake.Setup
             if (!knownPair) throw new InvalidOperationException("Unknown firewall cleanup role.");
 
             if (helperOperation == "RemoveVpn")
+            {
+                // A stale TUN default route must be removed before relaxing the
+                // native kill switch. Old cleanup binaries cannot prove that.
+                if (!TryRunVerifiedRecoveryHelper())
+                {
+                    if (required) throw new InvalidOperationException("Could not safely restore the managed VPN adapter. Native protection was retained and file removal was cancelled.");
+                    return;
+                }
                 HandShake.Release.WfpCleanup.RemoveOwned(HandShake.Release.WfpCleanup.ProviderKey);
+                return;
+            }
 
             string serviceBinary = Path.GetFullPath(Path.Combine(Product.InstallRoot, serviceBinaryName));
             if (File.Exists(serviceBinary))
@@ -1431,6 +1627,41 @@ namespace HandShake.Setup
 
             if (required)
                 throw new InvalidOperationException("Could not safely remove managed firewall rules for role " + helperOperation + ". The operation stopped before file removal.");
+        }
+
+        private static bool TryRunVerifiedRecoveryHelper()
+        {
+            // Install, rollback and uninstall supply the same exact helper from
+            // this installer's allowlisted payload, never a downloaded command.
+            if (verifiedCleanupHelper == null || verifiedCleanupManifest == null) return false;
+            RejectReparsePoint(verifiedCleanupHelper, "verified staged recovery script");
+            VerifyFile(verifiedCleanupHelper, verifiedCleanupManifest.length, verifiedCleanupManifest.sha256);
+            string powershell = Path.Combine(Environment.SystemDirectory, @"WindowsPowerShell\v1.0\powershell.exe");
+            return TryRunManagedProcess(powershell, "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File " +
+                QuoteFixedArgument(verifiedCleanupHelper) + " -Operation RecoverVpn");
+        }
+
+        private static void WriteInstalledUpdateNotice(string version)
+        {
+            string destination = Path.Combine(Product.InstallRoot, "update-installed.json");
+            RejectOwnedDestinationReparsePoints(destination);
+            RejectReparsePoint(destination, "installed update notice");
+            string temporary = destination + ".new-" + Guid.NewGuid().ToString("N");
+            try
+            {
+                byte[] body = Encoding.UTF8.GetBytes(new JavaScriptSerializer().Serialize(
+                    new { version = version, installedAtUtc = DateTime.UtcNow.ToString("o") }));
+                using (FileStream output = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+                {
+                    output.Write(body, 0, body.Length);
+                    output.Flush(true);
+                }
+                // Readers see a complete previous notice or a complete new one.
+                // A locked destination does not destroy the previous notice.
+                if (File.Exists(destination)) File.Replace(temporary, destination, null);
+                else File.Move(temporary, destination);
+            }
+            finally { if (File.Exists(temporary)) File.Delete(temporary); }
         }
 
         private static bool TryRunManagedProcess(string executable, string arguments)
@@ -2001,6 +2232,11 @@ namespace HandShake.Setup
 
         private static void TryDeleteStageDirectory(string path)
         {
+            TryDeleteStageDirectoryCore(path, ValidateInstallerJournalSecurity);
+        }
+
+        private static void TryDeleteStageDirectoryCore(string path, Action<string, bool> securityValidator)
+        {
             try
             {
                 string stage = Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar);
@@ -2010,6 +2246,16 @@ namespace HandShake.Setup
                 if (!string.Equals(parent, root, StringComparison.OrdinalIgnoreCase) ||
                     !Guid.TryParseExact(Path.GetFileName(stage), "N", out ignored)) return;
                 RejectReparsePoint(stage, "staging work directory");
+                string journal = Path.Combine(stage, "operation-journal.json");
+                if (File.Exists(journal))
+                {
+                    RejectReparsePoint(journal, "staging journal being checked for cleanup");
+                    securityValidator(root, true);
+                    securityValidator(stage, true);
+                    securityValidator(journal, false);
+                    if (!JournalIsTerminal(journal)) return;
+                }
+                else if (Directory.Exists(Path.Combine(stage, "install-backup")) || Directory.Exists(Path.Combine(stage, "data-backup"))) return;
                 if (Directory.Exists(stage)) DeleteTreeWithoutFollowingReparsePoints(stage);
                 RejectReparsePoint(root, "staging directory");
                 if (Directory.Exists(root) && Directory.GetFileSystemEntries(root).Length == 0) Directory.Delete(root, false);

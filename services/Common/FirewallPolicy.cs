@@ -502,6 +502,18 @@ namespace HandShake.Services
 
         public void VerifyStopped() { RunHelper("VerifyVpnStopped"); }
 
+        public void CompleteDisconnect()
+        {
+            // A prior Remove() during bootstrap says nothing about TUN state
+            // left behind by the process that ran afterwards. Always verify
+            // this explicit disconnect with the scoped recovery operation.
+            RunHelper("RecoverVpn");
+            _signature = null;
+            _tunnelAlias = null;
+            _cleanupChecked = true;
+            LogApplied("Verified personal VPN TUN and firewall cleanup.");
+        }
+
         private static string FindActiveInterface(IEnumerable<string> candidates)
         {
             foreach (NetworkInterface network in NetworkInterface.GetAllNetworkInterfaces())

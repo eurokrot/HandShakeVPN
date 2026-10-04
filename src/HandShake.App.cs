@@ -181,6 +181,14 @@ namespace HandShake
             SavePreview(d.window, "preview-menu.png");
             d.Get<Button>("LanguageButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             if (!d.english || d.Get<Button>("ConnectButton").Content.ToString() != "Connect") throw new Exception("English localization failed");
+            if (d.Get<Button>("OpenPrivacy").Content.ToString() != "Privacy policy")
+                throw new Exception("Service document localization failed");
+            d.Get<Expander>("ServiceDocuments").IsExpanded = true;
+            d.window.UpdateLayout();
+            if (d.Get<Border>("MenuPanel").ActualHeight + 83 > d.window.ActualHeight)
+                throw new Exception("Expanded service documents overflow the compact window");
+            d.Get<Button>("OpenTerms").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            d.Get<Expander>("ServiceDocuments").IsExpanded = false;
             d.window.UpdateLayout();
             SavePreview(d.window, "preview-english.png");
             d.Get<Button>("LanguageButton").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
@@ -371,6 +379,10 @@ namespace HandShake
             Click("NavActivation", ShowActivation);
             Click("RestoreNetwork", RestoreOrdinaryNetwork);
             Click("ActivationRestoreNetwork", RestoreOrdinaryNetwork);
+            Click("OpenTerms", delegate { OpenServiceDocument("terms"); });
+            Click("OpenPrivacy", delegate { OpenServiceDocument("privacy"); });
+            Click("OpenLicenses", delegate { OpenServiceDocument("licenses"); });
+            Click("OpenDataDeletion", delegate { OpenServiceDocument("data-deletion"); });
             Click("ConnectButton", ToggleConnection);
             Click("CircleConnect", ToggleConnection);
             Click("MenuButton", delegate { ShowOverlay("Menu"); });
@@ -634,11 +646,8 @@ namespace HandShake
             try
             {
                 string installed = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "update-installed.json");
-                if (!File.Exists(installed)) return Task.FromResult(true);
-                var record = new System.Web.Script.Serialization.JavaScriptSerializer().Deserialize<Dictionary<string, object>>(File.ReadAllText(installed));
-                object versionValue;
-                string version = record != null && record.TryGetValue("version", out versionValue) ? Convert.ToString(versionValue) : null;
-                if (!String.Equals(version, HandShake.Release.ProductRelease.Version, StringComparison.Ordinal)) return Task.FromResult(true);
+                string version = InstalledUpdateNotice.ReadCurrentVersion(installed, HandShake.Release.ProductRelease.Version);
+                if (version == null) return Task.FromResult(true);
                 string seen = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "HandShake", "last-update-notice.txt");
                 if (File.Exists(seen) && File.ReadAllText(seen) == version) return Task.FromResult(true);
                 Directory.CreateDirectory(System.IO.Path.GetDirectoryName(seen));
@@ -655,6 +664,21 @@ namespace HandShake
         private static string SafeVersion(string value)
         {
             return new string((value ?? "update").Where(character => Char.IsLetterOrDigit(character) || character == '.' || character == '-' || character == '_').Take(32).ToArray());
+        }
+
+        private void OpenServiceDocument(string document)
+        {
+            try
+            {
+                Uri target = ServiceDocumentLinks.Get(document, english);
+                if (!testing) Process.Start(new ProcessStartInfo(target.AbsoluteUri) { UseShellExecute = true });
+            }
+            catch (System.ComponentModel.Win32Exception)
+            {
+                MessageBox.Show(window, english ? "Open handshakevpn.tech in your browser to read the service documents."
+                    : "Откройте handshakevpn.tech в браузере, чтобы прочитать документы сервиса.",
+                    "HandShake VPN", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
         }
 
         private async Task BootstrapNodeServiceAsync(bool forceEnrollment = false)
@@ -1312,6 +1336,11 @@ namespace HandShake
             Get<Button>("RestoreNetwork").Content = english ? "Restore ordinary internet" : "Восстановить обычную сеть";
             Get<Button>("ActivationRestoreNetwork").Content = english ? "Restore ordinary internet" : "Восстановить обычную сеть";
             Get<Button>("LanguageButton").Content = english ? "RU   Русский" : "EN   English";
+            Get<Expander>("ServiceDocuments").Header = english ? "Service documents" : "Документы сервиса";
+            Get<Button>("OpenTerms").Content = english ? "Terms of use" : "Условия пользования";
+            Get<Button>("OpenPrivacy").Content = english ? "Privacy policy" : "Конфиденциальность";
+            Get<Button>("OpenLicenses").Content = english ? "Licenses" : "Лицензии";
+            Get<Button>("OpenDataDeletion").Content = english ? "Request data deletion" : "Удаление данных";
             Get<Button>("MenuHide").Content = english ? "Minimize to tray" : "Свернуть в трей";
             Get<TextBlock>("SettingsTitle").Text = english ? "Appearance" : "Оформление";
             Get<TextBlock>("SettingsIntro").Text = english ? "Appearance is saved on this device." : "Оформление сохраняется на этом устройстве.";

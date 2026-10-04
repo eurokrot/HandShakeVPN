@@ -14,6 +14,24 @@ namespace HandShake.Services
         // Never stop Node Service or reset unrelated firewall/network settings.
         internal static void Execute()
         {
+            ExecuteUnderRecoveryLock(ExecuteExclusive);
+        }
+
+        // Installer/uninstaller entry point. It must never remove protection
+        // underneath a live service or a still-running personal Xray process.
+        internal static void CleanupStoppedPersonalVpn()
+        {
+            ExecuteUnderRecoveryLock(delegate {
+                RequireVpnServiceStopped();
+                RequireNoPersonalXray();
+                RequireProtectedRecoveryPaths();
+                RunEmbeddedCleanup(false);
+                using (NativeWfp native = new NativeWfp()) native.Remove();
+            });
+        }
+
+        private static void ExecuteUnderRecoveryLock(Action operation)
+        {
             using (WindowsIdentity identity = WindowsIdentity.GetCurrent())
                 if (!new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator))
                     throw new InvalidOperationException("Administrator permission is required to restore the network.");
@@ -28,7 +46,7 @@ namespace HandShake.Services
             RequireNoReparsePath(path);
             // An OS-held file lock also serializes independent recovery EXEs.
             using (FileStream recoveryLock = new FileStream(path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
-                ExecuteExclusive();
+                operation();
         }
 
         private static void ExecuteExclusive()
@@ -53,17 +71,7 @@ namespace HandShake.Services
                         throw new InvalidOperationException("VPN Service did not stop. Protection has been retained.");
                 }
                 RequireNoPersonalXray();
-                RequireNoReparsePath(ProductInfo.ProgramDataRoot);
-                RequireNoReparsePath(VpnPaths.DirectoryPath);
-                RequireNoReparsePath(VpnPaths.SessionPath);
-                foreach (string directory in new[] { ProductInfo.ProgramDataRoot, VpnPaths.DirectoryPath,
-                    Path.Combine(ProductInfo.ProgramDataRoot, "firewall") }) {
-                    RequireNoReparsePath(directory);
-                    if (Directory.Exists(directory)) AccessControlGuard.RequireSystemAndAdministratorsOnly(directory, true);
-                }
-                string snapshot = Path.Combine(ProductInfo.ProgramDataRoot, "firewall", "vpn-profile-state.json");
-                RequireNoReparsePath(snapshot);
-                if (File.Exists(snapshot)) AccessControlGuard.RequireSystemAndAdministratorsOnly(snapshot, false);
+                RequireProtectedRecoveryPaths();
                 ProtectedStorage.WriteTextAtomic(VpnPaths.SessionPath, JsonFile.Serialize(new VpnSessionConfig {
                     enabled = false, sessionId = "network-recovery",
                     expiresAtUtc = DateTime.UtcNow.AddMinutes(5).ToString("o", CultureInfo.InvariantCulture),
@@ -71,13 +79,38 @@ namespace HandShake.Services
                 }));
                 // Mark disabled BEFORE removing persistent filters, so the next
                 // service boot cannot resurrect the old enabled session.
+                RunEmbeddedCleanup(true);
                 using (NativeWfp native = new NativeWfp()) native.Remove();
-                RunEmbeddedCleanup();
                 if (restart && vpn != null) {
                     vpn.Start();
                     vpn.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(30));
                 }
             } finally { if (vpn != null) vpn.Dispose(); }
+        }
+
+        private static void RequireProtectedRecoveryPaths()
+        {
+            RequireNoReparsePath(ProductInfo.ProgramDataRoot);
+            RequireNoReparsePath(VpnPaths.DirectoryPath);
+            RequireNoReparsePath(VpnPaths.SessionPath);
+            foreach (string directory in new[] { ProductInfo.ProgramDataRoot, VpnPaths.DirectoryPath,
+                Path.Combine(ProductInfo.ProgramDataRoot, "firewall") }) {
+                RequireNoReparsePath(directory);
+                if (Directory.Exists(directory)) AccessControlGuard.RequireSystemAndAdministratorsOnly(directory, true);
+            }
+            string snapshot = Path.Combine(ProductInfo.ProgramDataRoot, "firewall", "vpn-profile-state.json");
+            RequireNoReparsePath(snapshot);
+            if (File.Exists(snapshot)) AccessControlGuard.RequireSystemAndAdministratorsOnly(snapshot, false);
+        }
+
+        private static void RequireVpnServiceStopped()
+        {
+            foreach (ServiceController service in ServiceController.GetServices()) {
+                using (service) {
+                    if (service.ServiceName == "HandShakeVpnService" && service.Status != ServiceControllerStatus.Stopped)
+                        throw new InvalidOperationException("VPN Service is still running. Protection has been retained.");
+                }
+            }
         }
 
         internal static void RequireNoReparsePath(string path)
@@ -105,7 +138,7 @@ namespace HandShake.Services
             }
         }
 
-        private static void RunEmbeddedCleanup()
+        private static void RunEmbeddedCleanup(bool requireOrdinaryNetwork)
         {
             string directory = Path.Combine(ProductInfo.ProgramDataRoot, "network-recovery");
             RequireNoReparsePath(directory);
@@ -116,7 +149,8 @@ namespace HandShake.Services
                 using (StreamReader reader = new StreamReader(resource))
                     ProtectedStorage.WriteTextAtomic(helper, reader.ReadToEnd());
                 string powershell = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe");
-                foreach (string operation in new[] { "RemoveVpn", "VerifyVpnRecovery" }) {
+                string[] operations = requireOrdinaryNetwork ? new[] { "RecoverVpn", "VerifyVpnRecovery" } : new[] { "RecoverVpn" };
+                foreach (string operation in operations) {
                     ProcessStartInfo start = new ProcessStartInfo(powershell,
                         "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"" + helper + "\" -Operation " + operation);
                     start.UseShellExecute = false;

@@ -8,7 +8,7 @@ $taskErrors = $null; $taskTokens = $null
 $taskAst = [Management.Automation.Language.Parser]::ParseFile((Join-Path $taskRoot 'services\Firewall-Policy.ps1'), [ref]$taskTokens, [ref]$taskErrors)
 if ($taskErrors.Count) { throw 'Firewall helper parse failed' }
 $taskFunctions = @('Assert-ExactProperties','Save-VpnProfileState','Restore-VpnProfileState','Apply-Vpn',
-    'Assert-VpnStopped','Assert-VpnRecoveryComplete','Remove-VpnManagedState')
+    'Get-OwnedVpnAdapter','Assert-VpnStopped','Assert-VpnRecoveryComplete','Remove-VpnManagedState')
 foreach ($taskFunction in $taskFunctions) {
     $taskDefinition = $taskAst.FindAll({ param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] }, $true) |
         Where-Object Name -eq $taskFunction
@@ -17,6 +17,7 @@ foreach ($taskFunction in $taskFunctions) {
 $script:FirewallStateDirectory = $taskScratch
 $script:VpnStatePath = Join-Path $taskScratch 'snapshot.json'
 $script:VpnGroup = 'isolated-test'; $script:VpnPrefix = 'isolated-test.'
+$script:VpnTunGuid = [Guid]'44eb0814-5448-ac17-9b83-f3224562e575'
 $script:defaults = @{ Domain = 'Allow'; Private = 'NotConfigured'; Public = 'Block' }
 $script:failPrivateRestore = $true
 function Get-NetFirewallProfile { param($PolicyStore)
@@ -71,12 +72,14 @@ try {
     if ($script:ownedRules.Count -ne 1 -or $script:defaults.Public -ne 'Block') { throw 'Uncertain firewall state was changed' }
     $script:ownedRules = @(); $script:defaults.Public = 'Allow'
     Assert-VpnRecoveryComplete
-    $script:adapters = @([pscustomobject]@{ Name = 'handshake0'; InterfaceDescription = 'HandShake VPN'; ifIndex = 25 })
+    $script:adapters = @([pscustomobject]@{ Name = 'handshake0'; InterfaceDescription = 'HandShake VPN'; ifIndex = 25;
+        InterfaceGuid = $script:VpnTunGuid; HardwareInterface = $false; DriverFileName = 'wintun.sys' })
     $script:dns = @('1.1.1.1')
     try { Assert-VpnStopped; throw 'Owned DNS remnants were ignored' } catch {
         if ($_.Exception.Message -notlike 'The managed VPN adapter retains DNS/IP settings*') { throw }
     }
-    $script:adapters = @([pscustomobject]@{ Name = 'Ethernet'; InterfaceDescription = 'Physical adapter'; ifIndex = 2 })
+    $script:adapters = @([pscustomobject]@{ Name = 'Ethernet'; InterfaceDescription = 'Physical adapter'; ifIndex = 2;
+        InterfaceGuid = [Guid]::NewGuid(); HardwareInterface = $true; DriverFileName = 'ethernet.sys' })
     Assert-VpnRecoveryComplete
     Write-Output 'PASS: lost snapshot/blocked outbound cannot report success or change policy; owned DNS detected; physical adapter untouched'
 } finally {

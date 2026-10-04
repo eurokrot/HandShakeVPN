@@ -1,6 +1,6 @@
 {
-  "generatedAtUtc": "2026-10-04T13:06:20.716101+00:00",
-  "productVersion": "0.7-preview.11",
+  "generatedAtUtc": "2026-10-04T14:56:56.221272+00:00",
+  "productVersion": "0.7-preview.12",
   "scope": "selected Windows sources, no Node worker/backend/Linux/Android/admin or binaries",
   "files": [
     {
@@ -73,13 +73,13 @@
       "path": "build.ps1",
       "sourceSha256": "f21956cc2d5a2dadb25d73668d695930464b257f583885c672c57d257a345bcb",
       "adaptation": "Creates placeholder client.config; uses csc response file for long checkout paths without changing compiler inputs.",
-      "exportSha256": "e6934ed8956cd8e475ead885d13591bc7b09e344b05901eac2fc58d6d609af46"
+      "exportSha256": "baaedbd6acd885f8c1c767756469fde44b72c5c1f2bec006e92a72a49ed1ed28"
     },
     {
       "path": "src/MainWindow.xaml",
-      "sourceSha256": "144b66fb9dd66e8a1efac931d78071aedb6c4def2ab72f3b6ceea9cbf91b2bbd",
+      "sourceSha256": "fb3309049df5ed06ad036614d280798ad2e2a9f4054a2bf64aedfac2a73d1094",
       "adaptation": null,
-      "exportSha256": "144b66fb9dd66e8a1efac931d78071aedb6c4def2ab72f3b6ceea9cbf91b2bbd"
+      "exportSha256": "fb3309049df5ed06ad036614d280798ad2e2a9f4054a2bf64aedfac2a73d1094"
     },
     {
       "path": "src/MapWindow.xaml",
@@ -89,15 +89,15 @@
     },
     {
       "path": "src/HandShake.App.cs",
-      "sourceSha256": "10de827c7e572f95389b2d8add58ef488ab1a9cbd650d9e3fefac3f02c480228",
+      "sourceSha256": "6a8f542fb11b2981df762afbeb6720508a591b43bbdfea35f52f4a445d3a1e01",
       "adaptation": null,
-      "exportSha256": "10de827c7e572f95389b2d8add58ef488ab1a9cbd650d9e3fefac3f02c480228"
+      "exportSha256": "6a8f542fb11b2981df762afbeb6720508a591b43bbdfea35f52f4a445d3a1e01"
     },
     {
       "path": "src/HandShake.Core.cs",
-      "sourceSha256": "eed74be0143a3647f147645e93354f2a942442fb81a66e162f688c77281f7a30",
+      "sourceSha256": "79d9f083174dadc74de344fe2776ae7ba510a99b566f7201f60eeee60615799d",
       "adaptation": null,
-      "exportSha256": "eed74be0143a3647f147645e93354f2a942442fb81a66e162f688c77281f7a30"
+      "exportSha256": "79d9f083174dadc74de344fe2776ae7ba510a99b566f7201f60eeee60615799d"
     },
     {
       "path": "src/HandShake.ControlPlane.cs",
@@ -125,9 +125,9 @@
     },
     {
       "path": "shared/HandShake.Release.cs",
-      "sourceSha256": "12479c7b2031c846b92574cdb6584131f63c00e252c40ee2645b0d1e2e14240a",
+      "sourceSha256": "38b5ea6fb9b6a105f33f10097f88f7b58ab6e8e00140f728cceed52663918244",
       "adaptation": null,
-      "exportSha256": "12479c7b2031c846b92574cdb6584131f63c00e252c40ee2645b0d1e2e14240a"
+      "exportSha256": "38b5ea6fb9b6a105f33f10097f88f7b58ab6e8e00140f728cceed52663918244"
     },
     {
       "path": "shared/HandShake.ReleaseSecurity.cs",
@@ -161,9 +161,9 @@
     },
     {
       "path": "services/HandShakeVpnService.cs",
-      "sourceSha256": "877d76fdc1595a09d4db718a2822080241630792f54a18c6ab886d1ef0087caa",
+      "sourceSha256": "466099d0a0303fab575bc06a7ea33ee65f5e4b5e4ff7762c46186b7fe034356a",
       "adaptation": null,
-      "exportSha256": "877d76fdc1595a09d4db718a2822080241630792f54a18c6ab886d1ef0087caa"
+      "exportSha256": "466099d0a0303fab575bc06a7ea33ee65f5e4b5e4ff7762c46186b7fe034356a"
     },
     {
       "path": "services/Common/ServiceCommon.cs",
@@ -179,9 +179,9 @@
     },
     {
       "path": "services/Common/FirewallPolicy.cs",
-      "sourceSha256": "56f1e9b097b266e3b733b0e5ab9b6f8709724731849cefa5e0f6a3a63846ad38",
+      "sourceSha256": "ca23e4e0e96943fba0f9a8a90172896426b99264d337b3a65e8bab96c7193ae7",
       "adaptation": null,
-      "exportSha256": "56f1e9b097b266e3b733b0e5ab9b6f8709724731849cefa5e0f6a3a63846ad38"
+      "exportSha256": "ca23e4e0e96943fba0f9a8a90172896426b99264d337b3a65e8bab96c7193ae7"
     },
     {
       "path": "services/Common/NativeWfp.cs",
@@ -191,27 +191,27 @@
     },
     {
       "path": "services/Firewall-Policy.ps1",
-      "sourceSha256": "8534916439b697a2c6f2c0ef03a134ae86114b04528d1fdf4199f76349188cc3",
+      "sourceSha256": "c62028b5239884b0e8c467a67b0e972418c4f2bea97d392abc65cbd90941daab",
       "adaptation": null,
-      "exportSha256": "8534916439b697a2c6f2c0ef03a134ae86114b04528d1fdf4199f76349188cc3"
+      "exportSha256": "c62028b5239884b0e8c467a67b0e972418c4f2bea97d392abc65cbd90941daab"
     },
     {
       "path": "services/build.ps1",
       "sourceSha256": "b8e373c88da549dc84bab3cf2f6783a585e676bf57404d25ccacad0687257722",
       "adaptation": "Excludes compilation/self-test of closed Node Service; VPN compilation and tests unchanged.",
-      "exportSha256": "ca5b830e40614c9e7baedd2e1dd0b0475461208ea1f64ff0f764759e0f172257"
+      "exportSha256": "ccce1c5664837b7e354bfadc2627b7edd3c4c09ea0cf3dea6046eb2dcdec5dc5"
     },
     {
       "path": "services/Common/NetworkRecovery.cs",
-      "sourceSha256": "574273fd7ca36fedb1a25b6e6061d1f458125d3fd4ab947a76aeb4a9c1d3e545",
+      "sourceSha256": "c2245cbc5a97b4bb5fd8df02a23d0f6199302310b418ca2aa57dfad766bd300b",
       "adaptation": null,
-      "exportSha256": "574273fd7ca36fedb1a25b6e6061d1f458125d3fd4ab947a76aeb4a9c1d3e545"
+      "exportSha256": "c2245cbc5a97b4bb5fd8df02a23d0f6199302310b418ca2aa57dfad766bd300b"
     },
     {
       "path": "installer/Installer.cs",
-      "sourceSha256": "82c980fc9aae81c46539396bf8097e01d46a8fab33ca32c17eed9648aeab2150",
+      "sourceSha256": "dc50d1967a0ee373a51d8979b0e24afbfb4dd766f31b1e6da24a7ba5f67a2f0a",
       "adaptation": null,
-      "exportSha256": "82c980fc9aae81c46539396bf8097e01d46a8fab33ca32c17eed9648aeab2150"
+      "exportSha256": "dc50d1967a0ee373a51d8979b0e24afbfb4dd766f31b1e6da24a7ba5f67a2f0a"
     },
     {
       "path": "installer/setup.manifest",
@@ -221,9 +221,9 @@
     },
     {
       "path": "installer/build-installer.ps1",
-      "sourceSha256": "517e041001cc441218707cd7b6a03ba3c0bfa5104bbd4604efc25741f5e0b1d6",
+      "sourceSha256": "53a7b2fb92dd119db8457c22f6d5bf1ddae6319633f37090ad33e4a93eb9a3d4",
       "adaptation": "No implicit vendor private-key path; explicit external signing key or clearly unsigned development build. Packaging/installer logic unchanged.",
-      "exportSha256": "485b2d8515b8af9000adb2071e4e7637cd0c78a0e1c2f12ec57191163283cc52"
+      "exportSha256": "cf7b249631fde2cdd27fbe3a5f0bbf75d1489b9c65a023f32e10ad87edd36e4e"
     },
     {
       "path": "scripts/Sign-Release.ps1",
@@ -233,9 +233,9 @@
     },
     {
       "path": "tests/CoreTests.cs",
-      "sourceSha256": "63db3270ec2bb0ea7fb9a8d0ba9110585bdcb4fa9e3294924dd5bad4b9ff0019",
+      "sourceSha256": "81ce68643089761b9aa2265b3ba23168cd564d26aa21ddcc119d43648ab2754c",
       "adaptation": null,
-      "exportSha256": "63db3270ec2bb0ea7fb9a8d0ba9110585bdcb4fa9e3294924dd5bad4b9ff0019"
+      "exportSha256": "81ce68643089761b9aa2265b3ba23168cd564d26aa21ddcc119d43648ab2754c"
     },
     {
       "path": "tests/Test-ReleaseSigning.ps1",
@@ -269,9 +269,9 @@
     },
     {
       "path": "tests/Test-FirewallRestore.ps1",
-      "sourceSha256": "54c717ba67ecd284cd0de51b7431f0b3ef3bf752767bf2d22364937968af7479",
+      "sourceSha256": "ed9d493420f20e88ef84cb65f147488babe8d156a5d30b32dbbd30ca78e5724e",
       "adaptation": null,
-      "exportSha256": "54c717ba67ecd284cd0de51b7431f0b3ef3bf752767bf2d22364937968af7479"
+      "exportSha256": "ed9d493420f20e88ef84cb65f147488babe8d156a5d30b32dbbd30ca78e5724e"
     },
     {
       "path": "tests/Test-PipeIntegrity.ps1",
@@ -284,6 +284,42 @@
       "sourceSha256": "d1984cb2c357fc4573de54f6d1ecbefde378fcc6131ca411a03d0954daf0cd82",
       "adaptation": null,
       "exportSha256": "d1984cb2c357fc4573de54f6d1ecbefde378fcc6131ca411a03d0954daf0cd82"
+    },
+    {
+      "path": "tests/Test-VpnRecovery.ps1",
+      "sourceSha256": "a2b4b79ef6d8d6aa53f695776b751733041c8c81532e69a8440d68d1e47f7a11",
+      "adaptation": null,
+      "exportSha256": "a2b4b79ef6d8d6aa53f695776b751733041c8c81532e69a8440d68d1e47f7a11"
+    },
+    {
+      "path": "tests/VpnRecoveryTests.cs",
+      "sourceSha256": "b5a7f92557b0a7b1eb9f8518de4dddeb7be4f1f3d0343440240c1d1142b54f87",
+      "adaptation": null,
+      "exportSha256": "b5a7f92557b0a7b1eb9f8518de4dddeb7be4f1f3d0343440240c1d1142b54f87"
+    },
+    {
+      "path": "tests/Test-VpnTunCleanup.ps1",
+      "sourceSha256": "f55b91d5f390d12d240e149bd0d7c1d2909d45702dff086c10412dd472ea51c7",
+      "adaptation": null,
+      "exportSha256": "f55b91d5f390d12d240e149bd0d7c1d2909d45702dff086c10412dd472ea51c7"
+    },
+    {
+      "path": "tests/Test-Installer-UpdateCache.ps1",
+      "sourceSha256": "0413374ee14e0d89aee9cda7402b6aa92b3fc46156f759bd318df79ef42c6a92",
+      "adaptation": null,
+      "exportSha256": "0413374ee14e0d89aee9cda7402b6aa92b3fc46156f759bd318df79ef42c6a92"
+    },
+    {
+      "path": "tests/Test-Installer-InterruptionJournal.ps1",
+      "sourceSha256": "52f9a0710591f427245342f1fb5023248e1a9257d30831fafe7e81a94042ff0c",
+      "adaptation": null,
+      "exportSha256": "52f9a0710591f427245342f1fb5023248e1a9257d30831fafe7e81a94042ff0c"
+    },
+    {
+      "path": "tests/Test-Installer-RecoveryStaging.ps1",
+      "sourceSha256": "d5f7f32f599f9de3f9f43c9e321d16548cba8e50af8f1ee01cfb34a01b4e008d",
+      "adaptation": "Creates non-executable public allowlist/pin fixtures instead of reading an official Setup containing closed binaries. Recovery methods/checks unchanged.",
+      "exportSha256": "7cda5175b3525ef70baaed34aaaf5375a95dbfde58459cd11675b16cc94c0aae"
     },
     {
       "path": "relay/templates/server.relay.json.tmpl",

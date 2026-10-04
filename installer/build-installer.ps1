@@ -4,7 +4,7 @@ param(
     [string]$ServicesDirectory,
     [string]$XrayDirectory,
     [string]$OutputDirectory,
-    [string]$ProductVersion = '0.7-preview.11',
+    [string]$ProductVersion = '0.7-preview.12',
     [string]$XrayVersion = '26.9.30',
     [string]$CertificateThumbprint,
     [ValidateSet('CurrentUser', 'LocalMachine')][string]$CertificateStore = 'CurrentUser',

@@ -219,6 +219,29 @@ namespace HandShake.Services
         }
     }
 
+    internal sealed class VpnDisconnectOperation
+    {
+        private readonly string _sessionId;
+        private volatile ServiceStatus _completedStatus;
+
+        internal VpnDisconnectOperation(string sessionId) { _sessionId = sessionId; }
+        internal ServiceStatus CompletedStatus { get { return _completedStatus; } }
+
+        internal void CompleteCleanup(Action stopPersonalXray, Action clearOwnedNetwork, Action removeNativeProtection)
+        {
+            // Completion is an in-memory result of THIS requested cleanup.
+            // An old "stopped" state file cannot acknowledge a new request.
+            stopPersonalXray();
+            clearOwnedNetwork();
+            removeNativeProtection();
+            _completedStatus = new ServiceStatus {
+                state = "session-disabled", sessionId = _sessionId,
+                updatedAtUtc = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture),
+                xrayRunning = false, trafficSafety = "no-active-tunnel"
+            };
+        }
+    }
+
     internal sealed class LiveDestinationReporter
     {
         private static readonly Regex Destination = new Regex(
@@ -297,6 +320,7 @@ namespace HandShake.Services
         private DateTime? _tunWaitStartedUtc;
         private bool _faulted;
         private bool _disconnectVerified;
+        private VpnDisconnectOperation _pendingDisconnect;
         private volatile VpnSessionConfig _activeSession;
         private readonly LiveDestinationReporter _destinationReporter = new LiveDestinationReporter();
 
@@ -395,7 +419,14 @@ namespace HandShake.Services
                         if (!File.Exists(VpnPaths.SessionPath))
                         {
                             StopXrayForPolicy();
-                            _firewall.Remove();
+                            // A deleted/lost session file does not prove that
+                            // a crashed TUN left its routes and DNS clean. Clear
+                            // only the owned adapter; retain any native block
+                            // until an explicit disconnect authorizes removal.
+                            if (!_disconnectVerified) {
+                                _firewall.CompleteDisconnect();
+                                _disconnectVerified = true;
+                            }
                             bool protectedSessionLost = _nativeWfp.HasFilters();
                             WriteState(protectedSessionLost ? "error" : "stopped", null,
                                 protectedSessionLost ? "Session configuration is missing; traffic remains blocked until disconnect." : null,
@@ -442,14 +473,15 @@ namespace HandShake.Services
                             }
                             else
                             {
-                                StopXrayForPolicy();
-                                _activeSession = null;
-                                _firewall.Remove();
                                 if (!session.enabled && !_disconnectVerified) {
-                                    _firewall.VerifyStopped();
-                                    _nativeWfp.Remove();
+                                    VpnDisconnectOperation operation = _pendingDisconnect ?? new VpnDisconnectOperation(session.sessionId);
+                                    operation.CompleteCleanup(StopXrayForPolicy, _firewall.CompleteDisconnect, _nativeWfp.Remove);
                                     _disconnectVerified = true;
+                                } else {
+                                    StopXrayForPolicy();
+                                    _firewall.Remove();
                                 }
+                                _activeSession = null;
                                 _tunWaitStartedUtc = null;
                                 WriteState(decision, session, null, session.enabled ? "native-wfp-blocked" : "no-active-tunnel");
                             }
@@ -526,6 +558,7 @@ namespace HandShake.Services
                             FailClosedProvisioningCleanup);
                         _faulted = false;
                         _disconnectVerified = false;
+                        _pendingDisconnect = null;
                     }
                     finally { try { if (File.Exists(validationPath)) File.Delete(validationPath); } catch { } }
                 }
@@ -535,6 +568,9 @@ namespace HandShake.Services
             if (string.Equals(command, ServiceProtocol.DisconnectVpn, StringComparison.Ordinal))
             {
                 VpnDisconnectPayload request = ServicePayload.ReadStrict<VpnDisconnectPayload>(payload, new[] { "sessionId" });
+                if (request.sessionId != null && request.sessionId.Length > 128)
+                    throw new ServiceCommandException("invalid_session", "The VPN disconnect session identifier is too long.");
+                VpnDisconnectOperation operation;
                 lock (_configurationSync)
                 {
                     if (!String.IsNullOrWhiteSpace(request.sessionId) && File.Exists(VpnPaths.SessionPath)) {
@@ -551,15 +587,16 @@ namespace HandShake.Services
                     JsonFile.WriteAtomic(VpnPaths.SessionPath, disabled);
                     AccessControlGuard.RequireSystemAndAdministratorsOnly(VpnPaths.SessionPath, false);
                     _faulted = false;
+                    _disconnectVerified = false;
+                    operation = new VpnDisconnectOperation(disabled.sessionId);
+                    _pendingDisconnect = operation;
                 }
                 _reload.Set();
                 DateTime deadline = DateTime.UtcNow.AddSeconds(8);
                 while (DateTime.UtcNow < deadline)
                 {
-                    ServiceStatus status = ServiceStateReader.Read(VpnPaths.StatePath, "stopping");
-                    if ((string.Equals(status.state, "session-disabled", StringComparison.Ordinal) ||
-                        string.Equals(status.state, "stopped", StringComparison.Ordinal)) &&
-                        string.Equals(status.trafficSafety, "no-active-tunnel", StringComparison.Ordinal)) return status;
+                    ServiceStatus status = operation.CompletedStatus;
+                    if (status != null) return status;
                     Thread.Sleep(100);
                 }
                 throw new ServiceCommandException("cleanup_unconfirmed", "The service kept traffic fail-closed because network cleanup was not confirmed.");
@@ -845,9 +882,8 @@ namespace HandShake.Services
             {
                 try
                 {
-                    using (NativeWfp native = new NativeWfp()) native.Remove();
-                    new VpnFirewallController(VpnPaths.FirewallPlanPath, new ServiceLog(VpnPaths.LogPath)).Remove();
-                    Console.WriteLine("HandShake VPN managed firewall cleanup completed.");
+                    NetworkRecovery.CleanupStoppedPersonalVpn();
+                    Console.WriteLine("HandShake VPN managed network cleanup completed.");
                     return 0;
                 }
                 catch (Exception ex)
