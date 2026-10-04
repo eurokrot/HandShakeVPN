@@ -3,7 +3,7 @@
 Xray-core and Wintun are external runtimes, not source implementations written by
 this project. The source package contains no copies of their executable binaries.
 The installer packager requires the upstream runtime license files and preserves
-them in its payload. The build is pinned to Xray 26.9.9 and verifies asset hashes.
+them in its payload. The build is pinned to Xray 26.9.30 and verifies asset hashes.
 
 - Xray-core upstream: https://github.com/XTLS/Xray-core
 - Wintun upstream: https://www.wintun.net/
@@ -19,5 +19,5 @@ them in its payload. The build is pinned to Xray 26.9.9 and verifies asset hashe
   https://www.naturalearthdata.com/about/terms-of-use/ . Made with Natural Earth.
 - assets/handshake.ico: project logo supplied by the project owner.
 
-No blanket HandShake license is applied to third-party assets. The project's
-source-code license is pending the owner's decision.
+No blanket HandShake license is applied to third-party assets. The original
+HandShake material is covered by LICENSE; upstream grants remain unaffected.

@@ -1,8 +1,74 @@
 {
-  "generatedAtUtc": "2026-10-04T10:55:46.553109+00:00",
-  "productVersion": "0.7-preview.10",
+  "generatedAtUtc": "2026-10-04T13:06:20.716101+00:00",
+  "productVersion": "0.7-preview.11",
   "scope": "selected Windows sources, no Node worker/backend/Linux/Android/admin or binaries",
   "files": [
+    {
+      "path": "LICENSE",
+      "sourceSha256": "b2081b9ba9e6c76df1f58193d5135492dbf091e16f4a66766571cc490f6b79f3",
+      "adaptation": null,
+      "exportSha256": "b2081b9ba9e6c76df1f58193d5135492dbf091e16f4a66766571cc490f6b79f3"
+    },
+    {
+      "path": "legal/LICENSE.ru.md",
+      "sourceSha256": "d62e4ad15e91dec1fb43184f708daf3b3741562f8d8fc460a157bfd88954d172",
+      "adaptation": null,
+      "exportSha256": "d62e4ad15e91dec1fb43184f708daf3b3741562f8d8fc460a157bfd88954d172"
+    },
+    {
+      "path": "legal/LICENSES.ru.md",
+      "sourceSha256": "275fc117a1e4a9691ac67a4e3886a8f11e5eed2b6ee383388217bcb1d747d176",
+      "adaptation": null,
+      "exportSha256": "275fc117a1e4a9691ac67a4e3886a8f11e5eed2b6ee383388217bcb1d747d176"
+    },
+    {
+      "path": "legal/LICENSES.en.md",
+      "sourceSha256": "9089549ab223afcdd83da8d7693db7c647a406d3b2cbece8230e9cd3a02232d0",
+      "adaptation": null,
+      "exportSha256": "9089549ab223afcdd83da8d7693db7c647a406d3b2cbece8230e9cd3a02232d0"
+    },
+    {
+      "path": "legal/TERMS.ru.md",
+      "sourceSha256": "1cf86f11cd3952eedb9b25cf42b93c6cce4bafce8afcbe7abe12e14390b603b8",
+      "adaptation": null,
+      "exportSha256": "1cf86f11cd3952eedb9b25cf42b93c6cce4bafce8afcbe7abe12e14390b603b8"
+    },
+    {
+      "path": "legal/TERMS.en.md",
+      "sourceSha256": "aecfd9d14bdfd871e23bae594403f6cc5bfd3da7c9b60a3374dc687887276ca1",
+      "adaptation": null,
+      "exportSha256": "aecfd9d14bdfd871e23bae594403f6cc5bfd3da7c9b60a3374dc687887276ca1"
+    },
+    {
+      "path": "legal/PRIVACY.ru.md",
+      "sourceSha256": "67a829810aa9ab491e666d06beb039fea83a39f8c40b5a9e41fb5aa9fd7f5c4b",
+      "adaptation": null,
+      "exportSha256": "67a829810aa9ab491e666d06beb039fea83a39f8c40b5a9e41fb5aa9fd7f5c4b"
+    },
+    {
+      "path": "legal/PRIVACY.en.md",
+      "sourceSha256": "8cda7d0630decb1f64a0a74e38cecb92f917e5b5f4bb0ca65310b3e7ef15d7c6",
+      "adaptation": null,
+      "exportSha256": "8cda7d0630decb1f64a0a74e38cecb92f917e5b5f4bb0ca65310b3e7ef15d7c6"
+    },
+    {
+      "path": "legal/DATA_DELETION.ru.md",
+      "sourceSha256": "8bb11ec64227c1150bdb2076140af4cb7b2f8df761e3b22b1a7268b0d95965d1",
+      "adaptation": null,
+      "exportSha256": "8bb11ec64227c1150bdb2076140af4cb7b2f8df761e3b22b1a7268b0d95965d1"
+    },
+    {
+      "path": "legal/DATA_DELETION.en.md",
+      "sourceSha256": "11a12d8505861a5132d267255b2550c6cd7cc6c63883302f77fd18676ca117e2",
+      "adaptation": null,
+      "exportSha256": "11a12d8505861a5132d267255b2550c6cd7cc6c63883302f77fd18676ca117e2"
+    },
+    {
+      "path": "legal/links.json",
+      "sourceSha256": "22e3187ba9200f61a73af687009840f9fdef87eab557fce32a2de720d6c5b178",
+      "adaptation": null,
+      "exportSha256": "22e3187ba9200f61a73af687009840f9fdef87eab557fce32a2de720d6c5b178"
+    },
     {
       "path": "build.ps1",
       "sourceSha256": "f21956cc2d5a2dadb25d73668d695930464b257f583885c672c57d257a345bcb",
@@ -59,9 +125,9 @@
     },
     {
       "path": "shared/HandShake.Release.cs",
-      "sourceSha256": "53f49c233d8a848b3f56c4d4af6936fb8fded0523e3b67fe30ef09e2748a82c9",
+      "sourceSha256": "12479c7b2031c846b92574cdb6584131f63c00e252c40ee2645b0d1e2e14240a",
       "adaptation": null,
-      "exportSha256": "53f49c233d8a848b3f56c4d4af6936fb8fded0523e3b67fe30ef09e2748a82c9"
+      "exportSha256": "12479c7b2031c846b92574cdb6584131f63c00e252c40ee2645b0d1e2e14240a"
     },
     {
       "path": "shared/HandShake.ReleaseSecurity.cs",
@@ -143,9 +209,9 @@
     },
     {
       "path": "installer/Installer.cs",
-      "sourceSha256": "b95b4d443654aee8e02eec5f74bb756f7aa4928d8243548bc86397ae09d3dfb1",
+      "sourceSha256": "82c980fc9aae81c46539396bf8097e01d46a8fab33ca32c17eed9648aeab2150",
       "adaptation": null,
-      "exportSha256": "b95b4d443654aee8e02eec5f74bb756f7aa4928d8243548bc86397ae09d3dfb1"
+      "exportSha256": "82c980fc9aae81c46539396bf8097e01d46a8fab33ca32c17eed9648aeab2150"
     },
     {
       "path": "installer/setup.manifest",
@@ -155,9 +221,9 @@
     },
     {
       "path": "installer/build-installer.ps1",
-      "sourceSha256": "1acd51be11b1b78290a6f4f2a6cb4c791e97d4539ba2526440711f2b9dd37209",
+      "sourceSha256": "517e041001cc441218707cd7b6a03ba3c0bfa5104bbd4604efc25741f5e0b1d6",
       "adaptation": "No implicit vendor private-key path; explicit external signing key or clearly unsigned development build. Packaging/installer logic unchanged.",
-      "exportSha256": "67b2a2767eaf1dcb77d27a5d8e37221c52d9b3dee0920f6368e76b14abdd0beb"
+      "exportSha256": "485b2d8515b8af9000adb2071e4e7637cd0c78a0e1c2f12ec57191163283cc52"
     },
     {
       "path": "scripts/Sign-Release.ps1",

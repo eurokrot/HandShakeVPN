@@ -4,8 +4,8 @@ param(
     [string]$ServicesDirectory,
     [string]$XrayDirectory,
     [string]$OutputDirectory,
-    [string]$ProductVersion = '0.7-preview.10',
-    [string]$XrayVersion = '26.9.9',
+    [string]$ProductVersion = '0.7-preview.11',
+    [string]$XrayVersion = '26.9.30',
     [string]$CertificateThumbprint,
     [ValidateSet('CurrentUser', 'LocalMachine')][string]$CertificateStore = 'CurrentUser',
     [uri]$TimestampServer,
@@ -22,7 +22,7 @@ $installerRoot = $PSScriptRoot
 $projectRoot = Split-Path -Parent $installerRoot
 if ([string]::IsNullOrWhiteSpace($ClientDirectory)) { $ClientDirectory = Join-Path $projectRoot 'dist' }
 if ([string]::IsNullOrWhiteSpace($ServicesDirectory)) { $ServicesDirectory = Join-Path $projectRoot 'services\bin' }
-if ([string]::IsNullOrWhiteSpace($XrayDirectory)) { $XrayDirectory = Join-Path $projectRoot '.local\xray-26.9.9\extracted' }
+if ([string]::IsNullOrWhiteSpace($XrayDirectory)) { $XrayDirectory = Join-Path $projectRoot '.local\xray-26.9.30\extracted' }
 if ([string]::IsNullOrWhiteSpace($OutputDirectory)) { $OutputDirectory = Join-Path $installerRoot 'dist' }
 
 $releaseSource = Join-Path $projectRoot 'shared\HandShake.Release.cs'
@@ -30,12 +30,12 @@ $releaseIdentity = [IO.File]::ReadAllText($releaseSource)
 if ($releaseIdentity -notmatch ('Version = "' + [Regex]::Escape($ProductVersion) + '"')) { throw 'Build version must match shared/HandShake.Release.cs.' }
 $compiler = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
 if (!(Test-Path -LiteralPath $compiler -PathType Leaf)) { throw '.NET Framework 4.x x64 compiler was not found.' }
-if ($XrayVersion -ne '26.9.9') { throw 'This build script is pinned to the verified official Xray 26.9.9 runtime.' }
+if ($XrayVersion -ne '26.9.30') { throw 'This build script is pinned to the verified official Xray 26.9.30 runtime.' }
 
 $pinnedXrayFiles = @(
-    [pscustomobject]@{ Name = 'xray.exe'; Length = 36742144L; Sha256 = '0d0fc0ea2b05641acb78c01fc36ad694e7b029861b2d5eb93da0e3e9fda9a98f' },
-    [pscustomobject]@{ Name = 'geoip.dat'; Length = 17120329L; Sha256 = '4149e607530f91da697bad4696f8c59f0a475af38e69405e4124438c9886c721' },
-    [pscustomobject]@{ Name = 'geosite.dat'; Length = 10968988L; Sha256 = '2064a1a4074e145d5022ac49f2c30341e7b7cb6c7948da4fdca973b3fa8411b2' },
+    [pscustomobject]@{ Name = 'xray.exe'; Length = 37369344L; Sha256 = '43fa465275a8a64ddce4a27c3317ae3e99f0c264fec1962e04c3fadda83adc79' },
+    [pscustomobject]@{ Name = 'geoip.dat'; Length = 16635240L; Sha256 = '3cf2236c19063c1c80803368cca5ff589c5033129fdf9ba154230c689b81fc2a' },
+    [pscustomobject]@{ Name = 'geosite.dat'; Length = 10973728L; Sha256 = '51211fde21696bbde05d1102f47f586261e98987a3cae23f7dd1cd742c62c2d2' },
     [pscustomobject]@{ Name = 'wintun.dll'; Length = 427552L; Sha256 = 'e5da8447dc2c320edc0fc52fa01885c103de8c118481f683643cacc3220dafce' },
     [pscustomobject]@{ Name = 'LICENSE'; Length = 16725L; Sha256 = '1f256ecad192880510e84ad60474eab7589218784b9a50bc7ceee34c2b91f1d5' },
     [pscustomobject]@{ Name = 'LICENSE-wintun.txt'; Length = 5431L; Sha256 = '183adac21e7d96c508c8fd34d394b7b6708bc81564ad1bad61ab66143a008cd2' },

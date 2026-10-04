@@ -1,7 +1,7 @@
 # HandShake VPN — selected Windows sources
 
 This repository contains the selected Windows source components of HandShake VPN
-0.7-preview.10. It is a **partial source publication**, not the full product source.
+0.7-preview.11. It is a **partial source publication**, not the full product source.
 
 ## Published components
 
@@ -27,11 +27,13 @@ participation is governed by the recorded activation consent and service policy.
 The closed Node implementation cannot be independently rebuilt from this repository.
 
 The Windows client sends activation/device and application diagnostic data to a
-control plane. The published VPN Service contains optional live destination-domain
-telemetry for an authenticated administrator's active watch. This is not a claim
-that the product never processes destination metadata. Diagnostic event codes and
-live event flows are visible in the published client/service source; backend
-implementation and its storage behavior are outside this publication.
+control plane. The current administrative Live Traffic display is intended to show
+upload/download volumes and the selected servers. Diagnostic event codes and
+technical live-watch message contracts are visible in the published client/service
+source; their presence does not establish that every watch function is operational.
+Backend implementation and its storage behavior are outside this publication.
+See the included privacy draft for the implemented data handling and remaining
+release work; publishing this source does not make that draft effective.
 
 VLESS + REALITY remains the transport. The current MVP uses a reverse relay to reach
 exit participants behind NAT/CGNAT. This is not a Tor anonymity implementation.
@@ -63,7 +65,7 @@ activation, catalog and VPN use require a compatible backend and enrolled nodes.
 
 The installer source is included for inspection and development. A complete Setup
 requires the separately obtained closed HandShakeNodeService.exe and official
-Xray 26.9.9 assets, in addition to the published GUI/VPN Service outputs.
+Xray 26.9.30 assets, in addition to the published GUI/VPN Service outputs.
 No closed binary or third-party executable is shipped in this source archive.
 The unfilled relay templates are transport examples, not authoritative current
 runtime configurations. The VPN Service's typed configuration builder defines
@@ -72,7 +74,7 @@ the current routing, DNS, IPv6 blocking and kill-switch behavior.
 ```powershell
 .\installer\build-installer.ps1 `
   -ServicesDirectory 'C:\separate-build-inputs\services' `
-  -XrayDirectory 'C:\separate-build-inputs\xray-26.9.9' `
+  -XrayDirectory 'C:\separate-build-inputs\xray-26.9.30' `
   -UnsignedDevelopmentBuild
 ```
 
@@ -90,6 +92,13 @@ and the three build-script adaptations applied to the export only.
 
 ## License
 
-The owner has not selected a source-code license for this snapshot. It is prepared
-for source inspection; it is not labelled as a fully open-source product.
+Original HandShake material uses **HandShake Source Inspection License 1.0**;
+copyright (c) 2026 Daniil Stagge, Malta. Read LICENSE before building or reusing it.
+Inspection, paid security review and private evaluation are permitted. Incorporating
+substantial original code into another product or redistributing it requires
+separate permission, subject to the license's statutory/GitHub exceptions.
+This is source available, not an OSI-approved open-source license.
+See legal/LICENSE.ru.md for a Russian explanation. Licensing/support contact:
+eurokit.kat@proton.me. Service/privacy documents in legal are release drafts and
+do not automatically change the terms accepted by existing users.
 Third-party assets retain their upstream notices; see THIRD_PARTY_NOTICES.md.

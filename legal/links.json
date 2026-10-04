@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "status": "published-drafts",
+  "websitePublishedAtUtc": "2026-10-04T12:34:22Z",
+  "effectiveServiceTerms": "website-2026-10-02",
+  "applicationLinkIntegration": "pending",
+  "operator": "Daniil Stagge",
+  "operatorCountry": "Malta",
+  "supportEmail": "eurokit.kat@proton.me",
+  "website": "https://handshakevpn.tech/",
+  "terms": "https://handshakevpn.tech/terms",
+  "currentTestTerms": "https://handshakevpn.tech/terms/current",
+  "privacy": "https://handshakevpn.tech/privacy",
+  "licenses": "https://handshakevpn.tech/licenses",
+  "dataDeletion": "https://handshakevpn.tech/data-deletion",
+  "termsVersion": "terms-draft-2026-10-04",
+  "privacyVersion": "privacy-draft-2026-10-04",
+  "sourceLicenseVersion": "HandShake Source Inspection License 1.0",
+  "releasePriority": "windows",
+  "googlePlayStatus": "future-submission"
+}

@@ -2,7 +2,7 @@ namespace HandShake.Release
 {
     public static class ProductRelease
     {
-        public const string Version = "0.7-preview.10";
+        public const string Version = "0.7-preview.11";
 
         public static bool MayUpgrade(string installed, string candidate)
         {

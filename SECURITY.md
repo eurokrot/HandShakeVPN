@@ -13,6 +13,19 @@ and external IPv6 validation, trusted Authenticode release signing and comprehen
 dependency verification are also pending. No statement of an independent audit or
 absence of vulnerabilities is made.
 
+On October 4 preview.10 passed real Windows TUN HTTPS exit, UDP DNS and 1 MiB
+download checks through infrastructure and participant exits, followed by explicit
+disconnect and successful ordinary HTTPS. A forced-Xray-crash check kept direct
+traffic blocked but failed to restore the tunnel within 35 seconds, with a TUN
+adapter creation error. Preview.11 pins official Windows Xray 26.9.30, which restores
+opening an existing Wintun adapter. The same forced-crash and service-stop/restart
+check passed on the installed preview.11: direct IPv4/DNS remained blocked,
+tunnel HTTPS recovered, Node Service remained running, and disconnect restored
+ordinary networking. NL/FR/participant HTTPS, UDP DNS and 1 MiB checks also passed
+again on preview.11. These checks on one Windows PC do not establish complete
+Windows 10/11 boot, uninstall, update-failure, network-change or external IPv6
+coverage, or explain the historical incidents whose original states were lost.
+
 The official update verifier requires the pinned public key and checks version,
 installer hash and size. Authenticode publisher verification is a separate release
 process. A fork or locally rebuilt unsigned installer is not an authorized update.

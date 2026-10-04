@@ -1,0 +1,84 @@
+HandShake Source Inspection License 1.0
+Copyright (c) 2026 Daniil Stagge, Malta.
+Licensing contact: eurokit.kat@proton.me
+
+1. Scope and ownership
+This license covers only original HandShake source code and accompanying
+project documentation made available by the copyright holder with this license
+in the public source repository. It grants no rights to unpublished components,
+the hosted service, production infrastructure, customer information, or secrets.
+Copyright and ownership are retained by their respective holders.
+
+Third-party code, runtimes, dependencies, datasets and other third-party assets
+remain governed by their own licenses and notices. This license does not replace
+or restrict permissions granted by those licenses. See THIRD_PARTY_NOTICES.md
+and component-specific notices. Service terms and privacy notices describe use
+of the official service; this license is not a grant of service access.
+
+2. Limited permission
+Subject to this license, you may:
+(a) access, read, download and retain private copies of the published material;
+(b) inspect and analyze it, including independent security review and paid
+    professional security auditing;
+(c) compile, run and privately modify it solely for personal evaluation,
+    interoperability testing, security testing or developing a proposed
+    contribution, using environments and systems you are authorized to test;
+(d) submit proposed patches to the copyright holder through the repository's
+    designated contribution channels; and
+(e) publish commentary and findings with limited source excerpts reasonably
+    necessary to explain them, retaining attribution. Do not disclose secrets
+    or participant data, or redistribute substantial portions of the code.
+
+These permissions do not authorize operating a competing service, deploying
+modified clients as a public or commercial product, or accessing or testing
+the official infrastructure without separate authorization.
+
+3. Restrictions
+Except as permitted in section 2, by applicable mandatory law, or by a separate
+written permission from the copyright holder, you may not:
+(a) reproduce or redistribute substantial portions of the original HandShake
+    code, modified or unmodified, in source or executable form;
+(b) incorporate that code into another product or service, or offer or sell a
+    product or service based on that code;
+(c) sublicense the original HandShake material or remove its license and
+    copyright notices; or
+(d) represent an unofficial build as an official HandShake release.
+
+For a public GitHub repository, the permissions to view and fork within GitHub
+that are required by the applicable GitHub Terms of Service are preserved.
+That exception does not itself grant permission to deploy or distribute the
+code as another product. Independent implementations that do not copy protected
+HandShake material are not prohibited by this license. Rights that cannot be
+excluded under applicable law, including applicable quotation and
+interoperability rights, are preserved.
+
+4. Contributions and branding
+Submitting a contribution does not transfer its copyright automatically.
+The parties must agree any additional contribution rights needed to merge,
+license or distribute it. No trademark or branding license is granted.
+Descriptive references to HandShake and lawful reviews are permitted; you must
+not imply endorsement of an unofficial product.
+
+5. Warranty and liability
+The published material is provided "AS IS", without warranties, to the extent
+permitted by applicable law. To that extent, the copyright holder is not liable
+for loss caused by evaluation or use of the material. Nothing in this license
+excludes liability or rights that applicable law does not allow to be excluded.
+This provision is not a blanket exclusion of obligations to service customers.
+
+6. Breach, versions and additional permissions
+Rights granted by this license terminate on material breach, subject to any
+mandatory legal requirements. On termination, stop uses that depended on this
+license; independent statutory and third-party rights remain unaffected.
+A later license does not retroactively alter the terms applicable to a copy
+already received under this version. Request broader permissions in writing
+at the licensing contact above.
+
+7. Applicable law and language
+This license is governed by the laws of Malta, without excluding mandatory
+protections applicable to the licensee. No exclusive forum that would override
+mandatory jurisdiction rules is imposed. The English text is the license;
+the Russian explanation in legal/LICENSE.ru.md is a convenience summary.
+
+This is a source-available inspection license, not an OSI-approved open-source
+license. Public availability does not mean unrestricted reuse.

@@ -297,13 +297,13 @@ namespace HandShake.Setup
         private static readonly Dictionary<string, string> PinnedRuntimeSha256 =
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
-                { @"runtime\vpn\xray.exe", "0d0fc0ea2b05641acb78c01fc36ad694e7b029861b2d5eb93da0e3e9fda9a98f" },
-                { @"runtime\vpn\geoip.dat", "4149e607530f91da697bad4696f8c59f0a475af38e69405e4124438c9886c721" },
-                { @"runtime\vpn\geosite.dat", "2064a1a4074e145d5022ac49f2c30341e7b7cb6c7948da4fdca973b3fa8411b2" },
+                { @"runtime\vpn\xray.exe", "43fa465275a8a64ddce4a27c3317ae3e99f0c264fec1962e04c3fadda83adc79" },
+                { @"runtime\vpn\geoip.dat", "3cf2236c19063c1c80803368cca5ff589c5033129fdf9ba154230c689b81fc2a" },
+                { @"runtime\vpn\geosite.dat", "51211fde21696bbde05d1102f47f586261e98987a3cae23f7dd1cd742c62c2d2" },
                 { @"runtime\vpn\wintun.dll", "e5da8447dc2c320edc0fc52fa01885c103de8c118481f683643cacc3220dafce" },
-                { @"runtime\node\xray.exe", "0d0fc0ea2b05641acb78c01fc36ad694e7b029861b2d5eb93da0e3e9fda9a98f" },
-                { @"runtime\node\geoip.dat", "4149e607530f91da697bad4696f8c59f0a475af38e69405e4124438c9886c721" },
-                { @"runtime\node\geosite.dat", "2064a1a4074e145d5022ac49f2c30341e7b7cb6c7948da4fdca973b3fa8411b2" },
+                { @"runtime\node\xray.exe", "43fa465275a8a64ddce4a27c3317ae3e99f0c264fec1962e04c3fadda83adc79" },
+                { @"runtime\node\geoip.dat", "3cf2236c19063c1c80803368cca5ff589c5033129fdf9ba154230c689b81fc2a" },
+                { @"runtime\node\geosite.dat", "51211fde21696bbde05d1102f47f586261e98987a3cae23f7dd1cd742c62c2d2" },
                 { @"licenses\Xray-core-LICENSE.txt", "1f256ecad192880510e84ad60474eab7589218784b9a50bc7ceee34c2b91f1d5" },
                 { @"licenses\Wintun-LICENSE.txt", "183adac21e7d96c508c8fd34d394b7b6708bc81564ad1bad61ab66143a008cd2" },
                 { @"licenses\Xray-core-README.md", "0d098928cf19c756a8c956c0b5ca736b75f9eaff0765fd71c26a3dcb413a3dde" }
@@ -790,7 +790,7 @@ namespace HandShake.Setup
                 throw new InvalidDataException("The package manifest does not include the product or Xray version.");
             if (!string.Equals(manifest.productVersion, HandShake.Release.ProductRelease.Version, StringComparison.Ordinal))
                 throw new InvalidDataException("Installer and product release versions do not match.");
-            if (!string.Equals(manifest.xrayVersion, "26.9.9", StringComparison.Ordinal))
+            if (!string.Equals(manifest.xrayVersion, "26.9.30", StringComparison.Ordinal))
                 throw new InvalidDataException("The package Xray version does not match the pinned version.");
 
             HashSet<string> seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
